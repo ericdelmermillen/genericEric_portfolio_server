@@ -30,8 +30,9 @@ import cors from 'cors';
 // }));
 
 const app = express();
-const TESTING = process.env.TESTING || false;
-const corsOptions = TESTING ?  { }:  { origin: process.env.CLIENT_HOST};
+// const TESTING = process.env.TESTING || false;
+// const corsOptions = TESTING ?  { }:  { origin: process.env.CLIENT_HOST};
+const corsOptions = { origin: process.env.CLIENT_HOST };
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
