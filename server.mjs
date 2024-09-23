@@ -30,28 +30,40 @@ import cors from 'cors';
 // }));
 
 const app = express();
-// const TESTING = process.env.TESTING || false;
-// const corsOptions = TESTING ?  { }:  { origin: process.env.CLIENT_HOST};
-const corsOptions = { origin: process.env.CLIENT_HOST };
+const TESTING = process.env.TESTING || false;
+
+const corsOptions = TESTING 
+  ? { }
+  : { origin: process.env.CLIENT_HOST };
+  
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(helmet());
 
 
-
-// cors config object for cross origin 
-
-app.use(cors(corsOptions));
-
 // routes
-import authRouter from './routes/auth.mjs';
+import authRouter from './routes/authRoute.mjs';
+
+// import blogRouter from './routes/blogRouter.mjs';
+
+import contactRouter from './routes/contactRoute.mjs';
+
+import projectsRouter from './routes/projectsRoute.mjs';
 
 
 // Routers
+// ***may not need blogRoute or controller if blog is directly from youtube
 
 // authRouter for createUser, login, logout, AWS signed url
 app.use('/api/auth', authRouter);
+// contactRouter for handling contact form and forwarding via nodeMailer
+
+// app.use('/api/blog', blog)
+
+app.use('/api/contact', contactRouter);
+app.use('/api/projects', projectsRouter);
 
 
 

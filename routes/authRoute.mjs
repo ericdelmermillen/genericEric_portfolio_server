@@ -6,6 +6,7 @@ import {
   getSignedurl,
   logoutUser 
 } from "../controllers/authController.mjs";
+import{ emailAndPasswordAreValid } from '../utils/validationSchemas.mjs';
 const authRouter = express.Router();
 
 // where necessary add validation middleware from middleware.js package
@@ -13,25 +14,25 @@ const authRouter = express.Router();
 
 // createUser route
 authRouter.route('/createuser')
-  .post(createUser)
+  .post(createUser);
 
 
 // loginUser route
 authRouter.route("/loginuser")
-  .post(loginUser)
+  .post(loginUser);
 
 
 // generate refresh token
 authRouter.route("/refreshtoken")
-  .post(refreshToken)
+  .post(refreshToken);
 
 authRouter.route("/getsignedurl")
-  .post(getSignedurl)
+  .post(getSignedurl);
   
   
   // logoutUser route
 authRouter.route("/logoutuser")
-  .post(logoutUser)
+  .post(logoutUser);
 
 
 export default authRouter;
