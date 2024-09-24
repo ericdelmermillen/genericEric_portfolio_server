@@ -1,5 +1,12 @@
+// import jwt for refresh token comparison
+// import bcrypt to compare the hashed password
+import jwt from 'jsonwebtoken';
+import { 
+  generateRefreshToken, 
+  getToken 
+} from "../utils/utils.mjs";
 
-// needs to be async to query db
+
 // const createUser = async () => {
 const createUser = async (req, res) => {
   const { email, password } = req.body;
@@ -9,22 +16,54 @@ const createUser = async (req, res) => {
 
 
 // const loginUser = async (req, res) => {
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
-
 
   if(email !== "ericdelmermillen@gmail.com" || password !== "12345678") {
     return res.status(401).send({message: "Email and/or password incorrect"});
-  }
+  };
+
+  // stand in for db response of found user starts
+  const user = { id: 7 };
+
+  const userID = user.id;
+  // ends
   
-  return res.json(`user logged in: email: ${email}, password: ${password}`);
+  const token = getToken(user);
+  const refreshToken = generateRefreshToken(userID);
+
+  return res.json({
+    success: true,
+    message: "Login successful",
+    user: user,
+    token: token,
+    refreshToken: refreshToken
+  });
 };
 
 
-// generate refresh token: receives expored jwt and generates new refresh token
+// generate refresh token: receives expired jwt and generates new refresh token
 const refreshToken = (req, res, next) => {
+  const { refreshToken } = req.body;
 
-  return res.json("Here's your goddamned refresh token");
+  // Verify refresh token
+  try {
+    const { userID } = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    const newToken = getToken(userID);
+    const newRefreshToken = generateRefreshToken(userID);
+
+    res.json({
+      success: true,
+      message: "Token refreshed successfully",
+      newToken,
+      newRefreshToken
+    });
+
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return res.status(401).json({ error: 'Invalid refresh token' });
+  }
 };
 
 

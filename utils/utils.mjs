@@ -1,8 +1,15 @@
 import jwt from'jsonwebtoken';
+import dotenv from "dotenv";
+dotenv.config();
+
+const JWT_TOKEN_EXPIRATION_INTERVAL = process.env.JWT_TOKEN_EXPIRATION_INTERVAL;
+const JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL = process.env.
+JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL;
+
 
 // generate jwt
-const getToken = (user) => {
-  return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1m' });
+const getToken = (userID) => {
+  return jwt.sign({ userID }, process.env.JWT_SECRET, { expiresIn: JWT_TOKEN_EXPIRATION_INTERVAL });
 };
 
 // verify jwt
@@ -22,12 +29,14 @@ const verifyToken = (token) => {
 };
 
 // generate the refresh token
-const generateRefreshToken = (userId) => {
-  const payload = {
-    userId: userId
-  };
+const generateRefreshToken = (userID) => {
+  // const payload = {
+  //   userID: userID
+  // };
 
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '1d' });
+  // const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
+  
+  const refreshToken = jwt.sign({ userID }, process.env.JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
 
   return refreshToken;
 };

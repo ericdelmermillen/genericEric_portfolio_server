@@ -65,8 +65,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/projects', projectsRouter);
 
-
-
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
