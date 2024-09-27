@@ -1,0 +1,11 @@
+DROP DATABASE IF EXISTS generic_db;
+
+CREATE DATABASE generic_db;
+
+USE generic_db;
+
+CREATE TABLE users (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255),
+  password VARCHAR(255)
+);

@@ -1,52 +1,82 @@
-// import jwt for refresh token comparison
-// import bcrypt to compare the hashed password
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { 
-  generateRefreshToken, 
-  getToken 
+  getToken,
+  generateRefreshToken
 } from "../utils/utils.mjs";
+import pool from '../dbClient.mjs';
 
-
-// const createUser = async () => {
+// POST /api/auth/createuser
 const createUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body;  
+  
+  try {
+    const [ existingUser ] = await pool.query(
+    `SELECT id FROM users WHERE email = ?`, 
+    [email]);
 
-  return res.json(`user created: email: ${email}, password: ${password}`);
+    if(existingUser.length > 0) {
+      return res.status(409).json({ message: "Email already in use" });
+    };
+    
+    const hashedPassword = await bcrypt.hash(password, 10); 
+
+    const [ result ] = await pool.query(
+      `INSERT INTO users (email, password) VALUES (?, ?)`,
+      [email, hashedPassword]
+    );
+
+    return res.json({
+      success: true,
+      message: "User created successfully",
+      userId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return res.status(500).json({ message: "Database error creating user" });
+  }
 };
 
 
-// const loginUser = async (req, res) => {
+// POST /api/auth/loginuser
 const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
 
-  if(email !== "ericdelmermillen@gmail.com" || password !== "12345678") {
-    return res.status(401).send({message: "Email and/or password incorrect"});
-  };
+  try {
+    const [ user ] = await pool.query(
+      `SELECT id, password FROM users WHERE email = ?`,
+      [email]
+    );
 
-  // stand in for db response of found user starts
-  const user = { id: 7 };
+    if(user.length === 0) {
+      return res.status(401).json({ message: "Email and/or password incorrect" });
+    };
 
-  const userID = user.id;
-  // ends
-  
-  const token = getToken(user);
-  const refreshToken = generateRefreshToken(userID);
+    const isPasswordValid = await bcrypt.compare(password, user[0].password);
+    if(!isPasswordValid) {
+      return res.status(401).json({ message: "Email and/or password incorrect" });
+    }
 
-  return res.json({
-    success: true,
-    message: "Login successful",
-    user: user,
-    token: token,
-    refreshToken: refreshToken
-  });
+    const userID = user[0].id;
+    const token = getToken(userID);
+    const refreshToken = generateRefreshToken(userID);
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      refreshToken,
+    });
+  } catch (error) {
+    console.error(`Error logging in user: ${error}`);
+    return res.status(500).json({ message: "Database error logging in user" });
+  }
 };
 
-
-// generate refresh token: receives expired jwt and generates new refresh token
+// POST /api/auth/refreshtoken
 const refreshToken = (req, res, next) => {
   const { refreshToken } = req.body;
 
-  // Verify refresh token
   try {
     const { userID } = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
