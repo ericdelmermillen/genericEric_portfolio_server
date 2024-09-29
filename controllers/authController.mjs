@@ -26,10 +26,9 @@ const createUser = async (req, res) => {
       [email, hashedPassword]
     );
 
-    return res.json({
-      success: true,
+    return res.status(201).json({
       message: "User created successfully",
-      userId: result.insertId
+      userID: result.insertId
     });
   } catch (error) {
     console.error('Error creating user:', error);
@@ -62,8 +61,8 @@ const loginUser = async (req, res, next) => {
     const refreshToken = generateRefreshToken(userID);
 
     return res.json({
-      success: true,
       message: "Login successful",
+      userID: userID,
       token,
       refreshToken,
     });
@@ -84,8 +83,8 @@ const refreshToken = (req, res, next) => {
     const newRefreshToken = generateRefreshToken(userID);
 
     res.json({
-      success: true,
       message: "Token refreshed successfully",
+      userID: userID,
       newToken,
       newRefreshToken
     });
@@ -98,16 +97,54 @@ const refreshToken = (req, res, next) => {
 
 
 // calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
+// POST/api/auth/getsignedurl
 const getSignedurl = (req, res, next) => {
 
   return res.json("Here's that god dammned signed url");
 };
 
-const logoutUser = (req, res) => {
-  const { email, password } = req.body;
 
-  return res.json(`user logged out: email: ${email}, password: ${password}`);
-}
+// POST /api/auth/logoutuser
+const logoutUser = async (req, res) => {
+  const { token, refreshToken } = req.body;
+
+    const decodeJWT = (token) => {
+      try {
+        const base64Url = token.split('.')[1]; // Get the payload part
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+        return JSON.parse(jsonPayload);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+      }
+    };
+  
+    const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+
+  // handling for invalidating token/refresh token to be added later
+
+  if((!userID) || isNaN(+userID)) {
+    return res.status(400).json({ message: "Error logging out: token or refrshToken invalid" });
+  } 
+
+  try {
+    const [ matchedUser ] = await pool.query(
+      `SELECT id FROM users WHERE id = ?`,
+      [userID]
+    );
+
+    if(matchedUser.length === 0) {
+      return res.status(404).json({ message: `Unable to log you out: user with userID of ${userID} not found` });
+    }
+
+    return res.status(200).json({ message: "Successfully logged out" });
+
+  } catch (error) {
+    console.error('Error logging out user:', error);
+    return res.status(500).json({ message: "An error occurred while logging out" });
+  }
+};
 
 
 export {

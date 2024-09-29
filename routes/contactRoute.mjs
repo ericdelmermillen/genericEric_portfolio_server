@@ -1,15 +1,13 @@
 import express from "express";
 import { sendContactForm } from "../controllers/contactController.mjs";
-// import { 
-//   createUser, 
-//   loginUser, 
-//   refreshToken, 
-//   getSignedurl,
-//   logoutUser 
-// } from "../controllers/authController.mjs";
+import { validateRequest } from "../middleware/middleware.mjs";
+import{ validContactFormData } from '../utils/validationSchemas.mjs';
+
+// POST /api/contact/
 const contactRouter = express.Router();
 
 contactRouter.route("/")
-  .post(sendContactForm);
+.post(validateRequest(validContactFormData), sendContactForm);
+  // .post(sendContactForm);
 
 export default contactRouter;
