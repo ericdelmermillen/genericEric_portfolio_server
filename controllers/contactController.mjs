@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 const EMAIL = process.env.EMAIL;
 const PASSWORD = process.env.PASSWORD;
-const subject = "Contact Form submission from genericeric.dev"
+const subject = "Contact form submission from genericeric.dev"
 
 const sendContactForm = async (req, res) => {
   const { 
@@ -12,23 +12,23 @@ const sendContactForm = async (req, res) => {
   } = req.body;
 
   // simpler config object: can use either but this one requires less set up
-  const config = {
-    service: 'gmail',
-    auth: {
-      user: EMAIL,
-      pass: PASSWORD,
-    }
-  };
-
   // const config = {
-  //   host: 'smtp.gmail.com',
-  //   port: 465,
-  //   secure: true,
+  //   service: 'gmail',
   //   auth: {
   //     user: EMAIL,
-  //     pass: PASSWORD
+  //     pass: PASSWORD,
   //   }
-  // }
+  // };
+
+  const config = {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: EMAIL,
+      pass: PASSWORD
+    }
+  }
   
   const transporter = nodemailer.createTransport(config)
 
@@ -54,7 +54,7 @@ const emailMessage = {
     // response sent before request to transporter due to very long wait for confirmation
     res.status(201).json({
       message: "Thanks! Your message to Eric has been sent!"})
-
+      
     return await transporter.sendMail(emailMessage);
 
   } catch(error) {

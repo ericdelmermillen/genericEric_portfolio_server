@@ -46,23 +46,20 @@ app.use(helmet());
 // routes
 import authRouter from './routes/authRoute.mjs';
 
-// import blogRouter from './routes/blogRouter.mjs';
-
 import contactRouter from './routes/contactRoute.mjs';
 
 import projectsRouter from './routes/projectsRoute.mjs';
 
 
 // Routers
-// ***may not need blogRoute or controller if blog is directly from youtube
 
 // authRouter for createUser, login, logout, AWS signed url
 app.use('/api/auth', authRouter);
 // contactRouter for handling contact form and forwarding via nodeMailer
 
-// app.use('/api/blog', blog)
-
 app.use('/api/contact', contactRouter);
+
+
 app.use('/api/projects', projectsRouter);
 
 const PORT = process.env.PORT || 8080;

@@ -1,6 +1,7 @@
 import express from "express";
 import { 
-  getProjectSummaries,
+  getPortfolioSummary,
+  getProjects,
   getProjectDetails,
   createProject,
   editProject,
@@ -11,11 +12,15 @@ import {
 const projectsRouter = express.Router();
 
 
+// get project summaries for portfolio section of home page: 
+// --get the first image (dispay_order: 1) of the first X number of projects
+projectsRouter.route('/portfoliosummary')
+  .get(getPortfolioSummary);
+
 // get all projects: needs to accept limit and offset for pagination
-// call from Home of app returns 4 projects
-// probably only return project summaries
+// call from projects:
 projectsRouter.route('/all')
-  .get(getProjectSummaries);
+  .get(getProjects);
 
 
 // get all details for the project
