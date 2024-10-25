@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { 
   getToken,
-  generateRefreshToken,
+  getRefreshToken,
   verifyToken
 } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
@@ -60,7 +60,8 @@ const loginUser = async (req, res, next) => {
 
     const userID = user[0].id;
     const token = getToken(userID);
-    const refreshToken = generateRefreshToken(userID);
+    // const refreshToken = generateRefreshToken(userID);
+    const refreshToken = getRefreshToken(userID);
 
     return res.json({
       message: "Login successful",
@@ -82,7 +83,7 @@ const refreshToken = (req, res, next) => {
     const { userID } = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
     const newToken = getToken(userID);
-    const newRefreshToken = generateRefreshToken(userID);
+    const newRefreshToken = getRefreshToken(userID);
 
     res.json({
       message: "Token refreshed successfully",

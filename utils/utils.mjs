@@ -29,13 +29,7 @@ const verifyToken = (token) => {
 };
 
 // generate the refresh token
-const generateRefreshToken = (userID) => {
-  // const payload = {
-  //   userID: userID
-  // };
-
-  // const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
-  
+const getRefreshToken = (userID) => {  
   const refreshToken = jwt.sign({ userID }, process.env.JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
 
   return refreshToken;
@@ -50,6 +44,6 @@ const dateFormatOptions = () => (
 export {
   getToken,
   verifyToken,
-  generateRefreshToken,
+  getRefreshToken,
   dateFormatOptions
 };

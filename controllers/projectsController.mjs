@@ -1,4 +1,8 @@
-import { verifyToken } from '../utils/utils.mjs';
+import { 
+  getRefreshToken, 
+  getToken, 
+  verifyToken 
+} from '../utils/utils.mjs';
 import pool from '../dbClient.mjs';
 
 
@@ -98,35 +102,69 @@ const editProject = async (req, res, next) => {
 
 
 // delete project by id
-// needs to also get all the object names for the photos and call aws to delete each from the s3 bucket
+// needs to also get all object names for the photos of the project and on successful deletion of the project call aws to delete the objects as well
 const deleteProject = async (req, res, next) => {
-  const projectId = req.params.id;
-  const token = req.headers.authorization.split(" ")[1];
+  const projectID = req.params.id;
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers.refreshtoken;
 
-  if(!token || !verifyToken(token)) {
-    return res.status(401).json({ message: 'Authorization token missing or invalid' });
+  if(!token || !refreshToken) {
+    return res.status(401).json({ message: 'Authorization or refresh token missing' });
   };
+
+  let userID;
+
+  const decodedToken = verifyToken(token);
+
+  if(decodedToken) {
+    userID = decodedToken.userID;
+  } else {
+    const decodedRefreshToken = verifyToken(refreshToken);
+
+    if(decodedRefreshToken) {
+      userID = decodedRefreshToken.userID;
+
+      const newToken = getToken(userID);;
+      const newRefreshToken = getRefreshToken(userID);
+
+      return res.json({
+        message: `Project ${projectID} deleted successfully`,
+        newToken,
+        newRefreshToken,
+      });
+    } else {
+      return res.status(401).json({ message: 'Authorization token invalid' });
+    }
+  }
 
   try {
     const [ project ] = await pool.execute(
       'SELECT * FROM projects WHERE project_id = ?',
-      [projectId]
+      [projectID]
     );
 
     if(project.length === 0) {
-      return res.status(404).json({ message: `Project ${projectId} not found` });
-    };
+      return res.status(404).json({ message: `Project ${projectID} not found` });
+    }
 
-    await pool.execute('DELETE FROM projects WHERE project_id = ?', [projectId]);
+    await pool.execute('DELETE FROM projects WHERE project_id = ?', [projectID]);
 
-    return res.json({ message: `Project ${projectId} deleted successfully` });
-  } catch (err) {
-    console.error(err);
+    return res.json({
+      message: `Project ${projectID} deleted successfully`,
+      newToken: getToken(userID),
+      newRefreshToken: getRefreshToken(userID)
+    });
+
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: 'Failed to delete project' });
   };
 };
 
 
+
+// update project order for all projects
 const updateProjectOrder = async (req, res, next) => {
   const { new_project_order } = req.body;
   const token = req.headers.authorization.split(" ")[1];

@@ -8,6 +8,8 @@ import {
   deleteProject,
   updateProjectOrder
 } from "../controllers/projectsController.mjs";
+import { validateRequest } from "../middleware/middleware.mjs";
+import { paramsIsNumber } from "../utils/validationSchemas.mjs";
 
 const projectsRouter = express.Router();
 
@@ -38,12 +40,13 @@ projectsRouter.route('/project/edit/:id')
 
 // delete project by id
 projectsRouter.route('/project/delete/:id')
-  .delete(deleteProject)
+  .delete(validateRequest(paramsIsNumber), deleteProject)
 
 
 // update project order
 projectsRouter.route('/updateorder')
   .patch(updateProjectOrder)
+
 
 
 export default projectsRouter;
