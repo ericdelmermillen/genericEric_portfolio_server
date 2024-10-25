@@ -2,9 +2,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { 
   getToken,
-  generateRefreshToken
+  generateRefreshToken,
+  verifyToken
 } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
+
 
 // POST /api/auth/createuser
 const createUser = async (req, res) => {
@@ -64,7 +66,7 @@ const loginUser = async (req, res, next) => {
       message: "Login successful",
       userID: userID,
       token,
-      refreshToken,
+      refreshToken
     });
   } catch (error) {
     console.error(`Error logging in user: ${error}`);
@@ -104,46 +106,37 @@ const getSignedurl = (req, res, next) => {
 };
 
 
-// POST /api/auth/logoutuser
-const logoutUser = async (req, res) => {
+// // POST /api/auth/logoutuser
+const logoutUser = (req, res) => {
   const { token, refreshToken } = req.body;
 
-    const decodeJWT = (token) => {
-      try {
-        const base64Url = token.split('.')[1]; // Get the payload part
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
-        return JSON.parse(jsonPayload);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-        return null;
-      }
+  if(!token || !refreshToken) {
+    return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
+  };
+
+  if(!verifyToken(token)) {
+    return res.status(401).json({ message: 'Authorization token is invalid' });
+  };
+
+  const decodeJWT = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
     };
-  
-    const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+  };
 
-  // handling for invalidating token/refresh token to be added later
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
-  if((!userID) || isNaN(+userID)) {
-    return res.status(400).json({ message: "Error logging out: token or refrshToken invalid" });
-  } 
+  if(!userID || isNaN(Number(userID))) {
+    return res.status(400).json({ message: "Error logging out: token or refresh token invalid" });
+  };
 
-  try {
-    const [ matchedUser ] = await pool.query(
-      `SELECT id FROM users WHERE id = ?`,
-      [userID]
-    );
-
-    if(matchedUser.length === 0) {
-      return res.status(404).json({ message: `Unable to log you out: user with userID of ${userID} not found` });
-    }
-
-    return res.status(200).json({ message: "Successfully logged out" });
-
-  } catch (error) {
-    console.error('Error logging out user:', error);
-    return res.status(500).json({ message: "An error occurred while logging out" });
-  }
+  return res.status(200).json({ message: "Successfully logged out" });
 };
 
 

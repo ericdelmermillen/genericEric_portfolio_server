@@ -1,7 +1,6 @@
+import { verifyToken } from '../utils/utils.mjs';
 import pool from '../dbClient.mjs';
 
-import bcrypt from 'bcrypt';
-import { verifyToken } from '../utils/utils.mjs';
 
 // get portfolio summary
 // returns all project summaries
