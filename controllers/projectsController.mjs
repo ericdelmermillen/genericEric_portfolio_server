@@ -152,117 +152,66 @@ const deleteProject = async (req, res, next) => {
 };
 
 
+// add validations for project_id and display_order to be number
 // update project order for all projects
-// const updateProjectOrder = async (req, res, next) => {
-//   const { new_project_order } = req.body;
-//   const token = req.headers.authorization.split(" ")[1];
-//   console.log("here")
-  
-//   if(!token || !verifyToken(token)) {
-//     return res.status(401).json({ message: 'Authorization token missing or invalid' });
-//   };
-
-//   if(!Array.isArray(new_project_order) || new_project_order.length === 0) {
-//     return res.status(400).json({ message: 'Invalid input. Expected an array of project orders.' });
-//   };
-
-//   const connection = await pool.getConnection(); 
-
-//   try {
-//     await connection.beginTransaction(); 
-
-//     for (const { project_id, display_order } of new_project_order) {
-//       if(typeof project_id === 'undefined' || typeof display_order === 'undefined') {
-//         throw new Error(`Missing project_id or display_order for project ${project_id}`);
-//       }
-
-//       await connection.execute(
-//         'UPDATE projects SET display_order = ? WHERE project_id = ?',
-//         [display_order, project_id]
-//       );
-//     };
-
-//     await connection.commit();
-
-//     return res.json({ message: 'Project order updated successfully' });
-//   } catch (err) {
-//     await connection.rollback();
-//     console.error(err);
-//     return res.status(500).json({ error: 'Failed to update project order' });
-//   } finally {
-//     connection.release();
-//   };
-// };
-
 const updateProjectOrder = async (req, res, next) => {
   const { new_project_order } = req.body;
   const authHeader = req.headers.authorization;
   const refreshToken = req.headers.refreshtoken;
   const token = authHeader && authHeader.split(" ")[1];
 
-  // console.log(refreshToken)
-
-  if (!token && !refreshToken) {
+  if(!token && !refreshToken) {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  }
+  };
 
-  // Validate using either token or refresh token
-  const decodedToken = verifyToken(token) || verifyToken(refreshToken);
-  // console.log(verifyToken(token))
-  // console.log(`verifyToken(token): ${verifyToken(token)}`)
-  console.log(`verifyToken(refreshToken): ${verifyToken(refreshToken)}`)
-  // console.log(decodedToken)
+  let userID;
 
-  if (decodedToken) {
-    const userID = decodedToken.userID;
-    const newToken = decodedToken === verifyToken(refreshToken) ? getToken(userID) : null;
-    const newRefreshToken = decodedToken === verifyToken(refreshToken) ? getRefreshToken(userID) : null;
+  const decodedToken = 
+    verifyToken(token, "token") || 
+    verifyToken(refreshToken, "refreshToken");
 
-    if (!Array.isArray(new_project_order) || new_project_order.length === 0) {
-      return res.status(400).json({ message: 'Invalid input. Expected an array of project orders.' });
-    }
+  if(!decodedToken) {
+    return res.status(401).json({ message: 'Authorization token invalid' });
+  };
 
-    const connection = await pool.getConnection();
+  userID = decodedToken.userID;
 
-    try {
-      await connection.beginTransaction();
+  // can move this to validation schema
+  if(!Array.isArray(new_project_order) || new_project_order.length === 0) {
+    return res.status(400).json({ message: 'Invalid input. Expected an array of project orders.' });
+  };
 
-      for (const { project_id, display_order } of new_project_order) {
-        if (typeof project_id === 'undefined' || typeof display_order === 'undefined') {
-          throw new Error(`Missing project_id or display_order for project ${project_id}`);
-        }
+  const connection = await pool.getConnection();
 
-        await connection.execute(
-          'UPDATE projects SET display_order = ? WHERE project_id = ?',
-          [display_order, project_id]
-        );
+  try {
+    await connection.beginTransaction();
+
+    for(const { project_id, display_order } of new_project_order) {
+      if(typeof project_id === 'undefined' || typeof display_order === 'undefined') {
+        throw new Error(`Missing project_id or display_order for project ${project_id}`);
       }
 
-      await connection.commit();
+      await connection.execute(
+        'UPDATE projects SET display_order = ? WHERE project_id = ?',
+        [display_order, project_id]
+      );
+    };
 
-      return res.json({
-        message: 'Project order updated successfully',
-        newToken: newToken || getToken(userID),
-        newRefreshToken: newRefreshToken || getRefreshToken(userID),
-      });
-    } catch (err) {
-      await connection.rollback();
-      console.error(err);
-      return res.status(500).json({ error: 'Failed to update project order' });
-    } finally {
-      connection.release();
-    }
-  } else {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  }
+    await connection.commit();
+
+    return res.json({
+      message: 'Project order updated successfully',
+      newToken: getToken(userID),
+      newRefreshToken: getRefreshToken(userID)
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to update project order' });
+  } finally {
+    connection.release();
+  };
 };
-
-
-
-
-
-
-
 
 export {
   getPortfolioSummary,

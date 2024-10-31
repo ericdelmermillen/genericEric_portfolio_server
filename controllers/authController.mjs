@@ -7,6 +7,7 @@ import {
 } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
 
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
 
 // POST /api/auth/createuser
 const createUser = async (req, res) => {
@@ -79,7 +80,7 @@ const refreshToken = (req, res, next) => {
   const { refreshToken } = req.body;
 
   try {
-    const { userID } = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const { userID } = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
 
     const newToken = getToken(userID);
     const newRefreshToken = getRefreshToken(userID);
