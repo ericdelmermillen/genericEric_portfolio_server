@@ -47,6 +47,8 @@ projectsRouter.route('/project/delete/:id')
 projectsRouter.route('/updateorder')
   .patch(updateProjectOrder)
 
+// need updateProjectPhotoOrder route
+
 
 
 export default projectsRouter;
