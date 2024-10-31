@@ -3,7 +3,8 @@ import bcrypt from 'bcrypt';
 import { 
   getToken,
   getRefreshToken,
-  verifyToken
+  verifyToken,
+  decodeJWT
 } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
 
@@ -113,33 +114,26 @@ const logoutUser = (req, res) => {
 
   if(!token || !refreshToken) {
     return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
-  };
+  }
 
-  if(!verifyToken(token)) {
-    return res.status(401).json({ message: 'Authorization token is invalid' });
-  };
+  const tokenIsValid = 
+    verifyToken(token, "token") || 
+    verifyToken(refreshToken, "refreshToken");
 
-  const decodeJWT = (token) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    };
-  };
+  if(!tokenIsValid) {
+    return res.status(401).json({ message: 'Both authorization tokens are invalid' });
+  }
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
   if(!userID || isNaN(Number(userID))) {
-    return res.status(400).json({ message: "Error logging out: token or refresh token invalid" });
+    return res.status(400).json({ message: "Error logging out: invalid token" });
   };
+
+  // client configured to log out on error: no need to update database with logged out user but may want to log in future
 
   return res.status(200).json({ message: "Successfully logged out" });
 };
-
 
 export {
   createUser,

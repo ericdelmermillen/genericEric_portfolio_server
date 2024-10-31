@@ -43,6 +43,17 @@ const verifyToken = (token, tokenType) => {
   };
 };
 
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
 
 // date format options: returns config obj for dates
 const dateFormatOptions = () => (
@@ -54,5 +65,6 @@ export {
   getToken,
   verifyToken,
   getRefreshToken,
+  decodeJWT,
   dateFormatOptions
 };
