@@ -207,7 +207,7 @@ const updateProjectOrder = async (req, res, next) => {
   } catch (err) {
     await connection.rollback();
     console.error(err);
-    return res.status(500).json({ error: 'Failed to update project order' });
+    return res.status(500).json({ message: 'Failed to update project order' });
   } finally {
     connection.release();
   };
