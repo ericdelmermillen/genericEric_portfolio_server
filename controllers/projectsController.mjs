@@ -19,7 +19,7 @@ const getPortfolioSummary = async (req, res, next) => {
     let query = `
       SELECT 
         p.project_id AS id, 
-        p.title AS projectTitle, 
+        p.project_title AS projectTitle, 
         p.display_order AS display_order,
         (SELECT photo_url FROM photos WHERE photos.project_id = p.project_id AND photos.display_order = 1 LIMIT 1) AS imgSrc
       FROM 
@@ -43,9 +43,9 @@ const getPortfolioSummary = async (req, res, next) => {
 
     const projectSummaries = rows.map(row => ({
       project_id: row.id,
-      projectTitle: row.projectTitle,
+      project_title: row.projectTitle,
       display_order: row.display_order,
-      imgSrc: row.imgSrc || null
+      img_src: row.imgSrc || null
     }));
 
     return res.json(projectSummaries);
