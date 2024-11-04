@@ -59,16 +59,93 @@ const getPortfolioSummary = async (req, res, next) => {
 
 // get all projects
 // returns entire project
-// --id
-// --display_order
-// --title
-// --description
 // --photo_object names
-// --url for the project
-// --youtube video url if there is one
 const getProjects = async (req, res, next) => {
-  console.log("getProjects controller");
-  return res.json("Here's the goddamned project summaries");
+  try {
+    const limit = Math.max(parseInt(req.query.limit) || 10, 1);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+    let query = `
+      SELECT 
+          project_id,
+          DATE_FORMAT(project_date, '%d-%m-%Y') AS project_date,
+          display_order,
+          project_title,
+          project_description
+      FROM projects
+      ORDER BY display_order
+    `;
+
+    const queryParams = [];
+    if(limit !== null) {
+      query += ` LIMIT ?`;
+      queryParams.push(limit);
+    };
+
+    if(offset !== null) {
+      query += ` OFFSET ?`;
+      queryParams.push(offset);
+    };
+
+    const [ projects ] = await pool.query(query, queryParams);
+
+    // Collect project_ids for the second query
+    const projectIds = projects.map(project => project.project_id);
+
+    // Initialize arrays for project photos and URLs
+    const projectPhotos = {};
+    const projectUrls = {};
+
+    if(projectIds.length > 0) {
+      const photosQuery = `
+        SELECT photo_id, photo_url, display_order, project_id
+        FROM photos
+        WHERE project_id IN (?)
+        ORDER BY project_id, display_order
+      `;
+      const [ photos ] = await pool.query(photosQuery, [projectIds]);
+
+      photos.forEach(photo => {
+        if(!projectPhotos[photo.project_id]) {
+          projectPhotos[photo.project_id] = [];
+        };
+
+        projectPhotos[photo.project_id].push({
+          photo_id: photo.photo_id,
+          photo_url: photo.photo_url,
+          display_order: photo.display_order,
+        });
+      });
+
+      const urlsQuery = `
+        SELECT u.url_type AS url_label, pu.url, pu.project_id
+        FROM project_urls pu
+        JOIN url_types u ON pu.url_type = u.type_id
+        WHERE pu.project_id IN (?)
+      `;
+      const [ urls ] = await pool.query(urlsQuery, [projectIds]);
+
+      urls.forEach(url => {
+        if(!projectUrls[url.project_id]) {
+          projectUrls[url.project_id] = [];
+        };
+
+        projectUrls[url.project_id].push({
+          [url.url_label]: url.url,
+        });
+      });
+    };
+
+    projects.forEach(project => {
+      project.project_photos = projectPhotos[project.project_id] || [];
+      project.project_urls = projectUrls[project.project_id] || [];
+    });
+
+    return res.json(projects);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return res.status(500).json({ error: "An error occurred while fetching projects" });
+  };
 };
 
 

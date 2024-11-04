@@ -104,22 +104,22 @@ VALUES
   (
     1,
     'https://player.slideplayer.com/75/12551444/slides/slide_1.jpg',
-    1
+    4
   ),
   (
     1,
     'https://player.slideplayer.com/75/12551444/slides/slide_2.jpg',
-    2
-  ),
-  (
-    1,
-    'https://player.slideplayer.com/75/12551444/slides/slide_52.jpg',
     3
   ),
   (
     1,
+    'https://player.slideplayer.com/75/12551444/slides/slide_52.jpg',
+    2
+  ),
+  (
+    1,
     'https://player.slideplayer.com/75/12551444/slides/slide_62.jpg',
-    4
+    1
   ),
   -- little lemon
   (
@@ -240,6 +240,11 @@ VALUES
     'https://meta-front-end-developer-capstone-little-lemon-booking-app.vercel.app/'
   ),
   (
+    2,
+    3,
+    'https://github.com/ericdelmermillen/meta-front-end-developer-capstone-little-lemon-booking-app'
+  ),
+  (
     3,
     1,
     'https://amithamakeupartist.com/'
@@ -248,4 +253,14 @@ VALUES
     3,
     2,
     'https://www.youtube.com/watch?v=yEXZjKMwt7Y&t=5s'
+  ),
+  (
+    3,
+    3,
+    'https://github.com/ericdelmermillen/amitha-hmua-portfolio-site-client'
+  ),
+  (
+    3,
+    4,
+    'https://github.com/ericdelmermillen/amitha-hmua-portfolio-site-server'
   );
