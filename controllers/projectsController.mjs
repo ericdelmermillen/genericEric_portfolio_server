@@ -65,6 +65,13 @@ const getProjects = async (req, res, next) => {
     const limit = Math.max(parseInt(req.query.limit) || 10, 1);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
+    const [ maxDisplayOrderResult ] = await pool.query(`
+      SELECT MAX(display_order) AS max_display_order 
+      FROM projects
+    `);
+
+    const maxDisplayOrder = maxDisplayOrderResult[0].max_display_order;
+
     let query = `
       SELECT 
           project_id,
@@ -77,6 +84,7 @@ const getProjects = async (req, res, next) => {
     `;
 
     const queryParams = [];
+    
     if(limit !== null) {
       query += ` LIMIT ?`;
       queryParams.push(limit);
@@ -88,6 +96,8 @@ const getProjects = async (req, res, next) => {
     };
 
     const [ projects ] = await pool.query(query, queryParams);
+
+    const isFinalPage = projects[projects.length - 1].display_order === maxDisplayOrder;
 
     // Collect project_ids for the second query
     const projectIds = projects.map(project => project.project_id);
@@ -123,6 +133,7 @@ const getProjects = async (req, res, next) => {
         JOIN url_types u ON pu.url_type = u.type_id
         WHERE pu.project_id IN (?)
       `;
+      
       const [ urls ] = await pool.query(urlsQuery, [projectIds]);
 
       urls.forEach(url => {
@@ -140,8 +151,12 @@ const getProjects = async (req, res, next) => {
       project.project_photos = projectPhotos[project.project_id] || [];
       project.project_urls = projectUrls[project.project_id] || [];
     });
+  
+    return res.json({
+      projects,
+      isPaginationComplete: isFinalPage
 
-    return res.json(projects);
+    });
   } catch (error) {
     console.error("Error fetching projects:", error);
     return res.status(500).json({ error: "An error occurred while fetching projects" });
