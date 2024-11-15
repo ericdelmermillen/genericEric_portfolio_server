@@ -1,9 +1,11 @@
+import jwt from 'jsonwebtoken';
+import pool from '../dbClient.mjs';
 import { 
+  decodeJWT,
   getRefreshToken, 
   getToken, 
   verifyToken 
 } from '../utils/utils.mjs';
-import pool from '../dbClient.mjs';
 
 // ***need validations for all requests that are protected
 
@@ -54,7 +56,6 @@ const getPortfolioSummary = async (req, res, next) => {
     return res.status(500).json({ message: "Failed to fetch portfolio summary" });
   }
 };
-
 
 
 // get all projects
@@ -151,6 +152,8 @@ const getProjects = async (req, res, next) => {
       project.project_photos = projectPhotos[project.project_id] || [];
       project.project_urls = projectUrls[project.project_id] || [];
     });
+
+    console.log(projects)
   
     return res.json({
       projects,
@@ -175,10 +178,35 @@ const getProjects = async (req, res, next) => {
 // youtube video url if there is one
 const getProjectDetails = async (req, res, next) => {
   const projectId = req.params.id;
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers.refreshtoken;
+
+  if(!token && !refreshToken) {
+    return res.status(401).json({ message: 'Authorization or refresh token missing' });
+  };
+
+  const decodedToken =
+    verifyToken(token, "token") ||
+    verifyToken(refreshToken, "refreshToken");
+
+  if(!decodedToken) {
+    return res.status(401).json({ message: 'Authorization token invalid' });
+  }
+
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+  // verify able to log userID
+  
+  
+  
   
   console.log(`getProjectDetails for project: ${projectId}`)
   return res.json(`Here's the goddamned details for project: ${projectId}`)
 };
+
+
+
+
 
 
 const createProject = async (req, res, next) => {
@@ -202,13 +230,12 @@ const deleteProject = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers.refreshtoken;
-
+  
   if(!token && !refreshToken) {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
   };
 
-  let userID;
-
+  // returns a boolean
   const decodedToken = 
     verifyToken(token, "token") || 
     verifyToken(refreshToken, "refreshToken");
@@ -217,7 +244,7 @@ const deleteProject = async (req, res, next) => {
     return res.status(401).json({ message: 'Authorization token invalid' });
   };
 
-  userID = decodedToken.userID;
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
   try {
     const [ project ] = await pool.execute(

@@ -22,6 +22,29 @@ const getRefreshToken = (userID) => {
 };
 
 // verify token or refreshToken
+// const verifyToken = (token, tokenType) => {
+//   try {
+//     const secret =
+//       tokenType === "token"
+//         ? JWT_SECRET
+//         : tokenType === "refreshToken"
+//         ? JWT_REFRESH_SECRET
+//         : null;
+
+//     if(!secret) {
+//       return false;
+//     };
+
+//     const verified = jwt.verify(token, secret);
+//     console.log(verified)
+//     return true;
+
+//   } catch (error) {
+//     return false;
+//   };
+// };
+
+// Verify token or refreshToken
 const verifyToken = (token, tokenType) => {
   try {
     const secret =
@@ -35,13 +58,14 @@ const verifyToken = (token, tokenType) => {
       return false;
     };
 
-    const x = jwt.verify(token, secret);
+    jwt.verify(token, secret); // Throws error if invalid
+    
     return true;
-
   } catch (error) {
-    return error.name === 'TokenExpiredError' ? false : false;
+    return false;
   };
 };
+
 
 const decodeJWT = (token) => {
   try {

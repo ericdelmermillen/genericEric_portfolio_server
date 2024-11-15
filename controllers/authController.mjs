@@ -63,7 +63,7 @@ const loginUser = async (req, res, next) => {
     const userID = user[0].id;
     const token = getToken(userID);
     const refreshToken = getRefreshToken(userID);
-
+    
     return res.json({
       message: "Login successful",
       userID: userID,
