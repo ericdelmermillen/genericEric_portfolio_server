@@ -23,7 +23,8 @@ authRouter.route("/loginuser")
 
 // generate refresh token
 authRouter.route("/refreshtoken")
-  .post(validateRequest(refreshTokenSchema), 
+  .post(
+    // validateRequest(refreshTokenSchema), 
   refreshToken);
   
 

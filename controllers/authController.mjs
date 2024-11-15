@@ -76,7 +76,7 @@ const loginUser = async (req, res, next) => {
 
 // POST /api/auth/refreshtoken
 const refreshToken = (req, res, next) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.headers['x-refresh-token'];  
   
   try {
     const { userID } = jwt.decode(refreshToken);
@@ -124,7 +124,6 @@ const logoutUser = (req, res) => {
   };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
-  console.log(userID)
 
   if(!userID || isNaN(Number(userID))) {
     return res.status(400).json({ message: "Error logging out: invalid token" });

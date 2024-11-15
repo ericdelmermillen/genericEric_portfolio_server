@@ -17,6 +17,16 @@ const emailAndPasswordAreValid = [
     .withMessage('Password must be a string')
 ];
 
+// no longer sending this in body
+const tokenSchema = [
+  body('token')
+    .notEmpty()
+    .withMessage('Token is required')
+    .isString()
+    .withMessage('Token must be a string')
+];
+
+// no longer sending this in body
 const refreshTokenSchema = [
   body('refreshToken')
     .notEmpty()
@@ -47,6 +57,7 @@ const validContactFormData = [
 export {
   paramsIsNumber,
   emailAndPasswordAreValid, 
+  tokenSchema,
   refreshTokenSchema,
   validContactFormData,
 };
