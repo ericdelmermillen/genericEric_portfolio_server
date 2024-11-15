@@ -245,6 +245,7 @@ const deleteProject = async (req, res, next) => {
   };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+  console.log(userID)
 
   try {
     const [ project ] = await pool.execute(
@@ -283,7 +284,6 @@ const updateProjectOrder = async (req, res, next) => {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
   };
 
-  let userID;
 
   const decodedToken = 
     verifyToken(token, "token") || 
@@ -293,7 +293,7 @@ const updateProjectOrder = async (req, res, next) => {
     return res.status(401).json({ message: 'Authorization token invalid' });
   };
 
-  userID = decodedToken.userID;
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
   // can move this to validation schema
   if(!Array.isArray(new_project_order) || new_project_order.length === 0) {

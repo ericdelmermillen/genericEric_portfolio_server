@@ -16,33 +16,8 @@ const getToken = (userID) => {
 
 // generate jwt refresh token
 const getRefreshToken = (userID) => {  
-  const refreshToken = jwt.sign({ userID }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
-
-  return refreshToken;
+  return jwt.sign({ userID }, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_TOKEN_EXPIRATION_INTERVAL });
 };
-
-// verify token or refreshToken
-// const verifyToken = (token, tokenType) => {
-//   try {
-//     const secret =
-//       tokenType === "token"
-//         ? JWT_SECRET
-//         : tokenType === "refreshToken"
-//         ? JWT_REFRESH_SECRET
-//         : null;
-
-//     if(!secret) {
-//       return false;
-//     };
-
-//     const verified = jwt.verify(token, secret);
-//     console.log(verified)
-//     return true;
-
-//   } catch (error) {
-//     return false;
-//   };
-// };
 
 // Verify token or refreshToken
 const verifyToken = (token, tokenType) => {

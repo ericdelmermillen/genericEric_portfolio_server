@@ -8,8 +8,6 @@ import {
 } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
 
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-
 // POST /api/auth/createuser
 const createUser = async (req, res) => {
   const { email, password } = req.body;  
@@ -73,7 +71,7 @@ const loginUser = async (req, res, next) => {
   } catch (error) {
     console.error(`Error logging in user: ${error}`);
     return res.status(500).json({ message: "Database error logging in user" });
-  }
+  };
 };
 
 // POST /api/auth/refreshtoken
@@ -81,7 +79,7 @@ const refreshToken = (req, res, next) => {
   const { refreshToken } = req.body;
   
   try {
-    const { userID } = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const { userID } = jwt.decode(refreshToken);
 
     const newToken = getToken(userID);
     const newRefreshToken = getRefreshToken(userID);
@@ -104,17 +102,18 @@ const refreshToken = (req, res, next) => {
 // POST/api/auth/getsignedurl
 const getSignedurl = (req, res, next) => {
 
-  return res.json("Here's that god dammned signed url");
+  return res.json("Here's that god damned signed url");
 };
 
 
 // // POST /api/auth/logoutuser
 const logoutUser = (req, res) => {
-  const { token, refreshToken } = req.body;
+  const token = req.headers['authorization']?.split(' ')[1];
+  const refreshToken = req.headers['x-refresh-token'];  
 
   if(!token || !refreshToken) {
     return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
-  }
+  };
 
   const tokenIsValid = 
     verifyToken(token, "token") || 
@@ -122,9 +121,10 @@ const logoutUser = (req, res) => {
 
   if(!tokenIsValid) {
     return res.status(401).json({ message: 'Both authorization tokens are invalid' });
-  }
+  };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+  console.log(userID)
 
   if(!userID || isNaN(Number(userID))) {
     return res.status(400).json({ message: "Error logging out: invalid token" });
