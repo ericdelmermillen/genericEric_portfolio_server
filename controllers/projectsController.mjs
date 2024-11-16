@@ -165,7 +165,7 @@ const getProjects = async (req, res) => {
 
 // getProjectDetails returns all details/info for the project
 // to populate the AddOrEdit project page (edit view) for admin to edit project
-const getProjectDetails = async (req, res, next) => {
+const getProjectDetails = async (req, res) => {
   const projectId = req.params.id;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -181,7 +181,7 @@ const getProjectDetails = async (req, res, next) => {
 
   if(!decodedToken) {
     return res.status(401).json({ message: 'Authorization token invalid' });
-  }
+  };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
@@ -258,14 +258,14 @@ const getProjectDetails = async (req, res, next) => {
 };
 
 
-const createProject = async (req, res, next) => {
+const createProject = async (req, res) => {
 
   console.log("createProject")
   return res.json(`Looks like a great project`);
 };
 
 // edit project by id
-const editProject = async (req, res, next) => {
+const editProject = async (req, res) => {
   const projectId = req.params.id;
 
   return res.json(`Project ${projectId} edited successfully`);
@@ -273,7 +273,7 @@ const editProject = async (req, res, next) => {
 
 
 // delete project by id
-const deleteProject = async (req, res, next) => {
+const deleteProject = async (req, res) => {
   const projectID = req.params.id;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -340,7 +340,7 @@ const deleteProject = async (req, res, next) => {
 
 // add validations for project_id and display_order to be number
 // update project order for all projects
-const updateProjectOrder = async (req, res, next) => {
+const updateProjectOrder = async (req, res) => {
   const { new_project_order } = req.body;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];

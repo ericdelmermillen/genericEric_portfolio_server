@@ -40,7 +40,7 @@ const createUser = async (req, res) => {
 
 
 // POST /api/auth/loginuser
-const loginUser = async (req, res, next) => {
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -75,7 +75,7 @@ const loginUser = async (req, res, next) => {
 };
 
 // POST /api/auth/refreshtoken
-const refreshToken = (req, res, next) => {
+const refreshToken = (req, res) => {
   const refreshToken = req.headers['x-refresh-token'];  
   
   try {
@@ -100,7 +100,7 @@ const refreshToken = (req, res, next) => {
 
 // calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
 // POST/api/auth/getsignedurl
-const getSignedurl = (req, res, next) => {
+const getSignedurl = (req, res) => {
 
   return res.json("Here's that god damned signed url");
 };
