@@ -1,4 +1,3 @@
-import jwt from 'jsonwebtoken';
 import pool from '../dbClient.mjs';
 import { 
   decodeJWT,
@@ -13,7 +12,7 @@ import {
 // get portfolio summary
 // returns all project summaries
 // --image object name for image url (maybe send full url)
-const getPortfolioSummary = async (req, res, next) => {
+const getPortfolioSummary = async (req, res) => {
   const limit = req.query.limit ? parseInt(req.query.limit) : null;
   const offset = req.query.offset ? parseInt(req.query.offset) : null;
 
@@ -61,7 +60,7 @@ const getPortfolioSummary = async (req, res, next) => {
 // get all projects
 // returns entire project
 // --photo_object names
-const getProjects = async (req, res, next) => {
+const getProjects = async (req, res) => {
   try {
     const limit = Math.max(parseInt(req.query.limit) || 10, 1);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
@@ -152,13 +151,10 @@ const getProjects = async (req, res, next) => {
       project.project_photos = projectPhotos[project.project_id] || [];
       project.project_urls = projectUrls[project.project_id] || [];
     });
-
-    console.log(projects)
   
     return res.json({
       projects,
       isPaginationComplete: isFinalPage
-
     });
   } catch (error) {
     console.error("Error fetching projects:", error);
@@ -169,18 +165,11 @@ const getProjects = async (req, res, next) => {
 
 // getProjectDetails returns all details/info for the project
 // to populate the AddOrEdit project page (edit view) for admin to edit project
-// returns entire project:
-// --all pics for the project
-// --display_order for project images
-// --display_order for the project (?)
-// project description
-// project deployment url
-// youtube video url if there is one
 const getProjectDetails = async (req, res, next) => {
   const projectId = req.params.id;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
-  const refreshToken = req.headers.refreshtoken;
+  const refreshToken = req.headers['x-refresh-token'];
 
   if(!token && !refreshToken) {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
@@ -195,18 +184,78 @@ const getProjectDetails = async (req, res, next) => {
   }
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
-  // verify able to log userID
-  
-  
-  
-  
-  console.log(`getProjectDetails for project: ${projectId}`)
-  return res.json(`Here's the goddamned details for project: ${projectId}`)
+
+  try {
+    const connection = await pool.getConnection();
+
+    // Query project details
+    const [ projectRows ] = await connection.query(
+      `SELECT 
+         project_id, 
+         DATE_FORMAT(project_date, '%d-%m-%Y') AS project_date, 
+         display_order, 
+         project_title, 
+         project_description 
+       FROM projects 
+       WHERE project_id = ?`,
+      [projectId]
+    );
+
+    if(projectRows.length === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    const project = projectRows[0];
+
+    // Query project URLs
+    const [ urlRows ] = await connection.query(
+      `SELECT 
+         ut.url_type AS type, 
+         pu.url 
+       FROM project_urls pu 
+       JOIN url_types ut ON pu.url_type = ut.type_id 
+       WHERE pu.project_id = ?`,
+      [projectId]
+    );
+
+    const projectUrls = urlRows.map(row => ({ [row.type]: row.url }));
+
+    // Query project photos
+    const [ photoRows ] = await connection.query(
+      `SELECT 
+         photo_id, 
+         display_order, 
+         photo_url 
+       FROM photos 
+       WHERE project_id = ? 
+       ORDER BY display_order ASC`,
+      [projectId]
+    );
+
+    const projectPhotos = photoRows.map(photo => ({
+      photo_id: photo.photo_id,
+      display_order: photo.display_order,
+      photo_url: photo.photo_url
+    }));
+
+    // Construct the response
+    const projectDetails = {
+      project_id: project.project_id,
+      project_date: project.project_date,
+      display_order: project.display_order,
+      project_title: project.project_title,
+      project_description: project.project_description,
+      project_urls: projectUrls,
+      project_photos: projectPhotos,
+      newToken: getToken(userID),
+      newRefreshToken: getRefreshToken(userID)
+    };
+
+    return res.json(projectDetails);
+  } catch (error) {
+    console.error("Error fetching project details:", error);
+  };
 };
-
-
-
-
 
 
 const createProject = async (req, res, next) => {
@@ -224,20 +273,18 @@ const editProject = async (req, res, next) => {
 
 
 // delete project by id
-// needs to also get all object names for the photos of the project and on successful deletion of the project call aws to delete the objects as well
 const deleteProject = async (req, res, next) => {
   const projectID = req.params.id;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
-  const refreshToken = req.headers.refreshtoken;
-  
+  const refreshToken = req.headers['x-refresh-token'];
+
   if(!token && !refreshToken) {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
   };
 
-  // returns a boolean
-  const decodedToken = 
-    verifyToken(token, "token") || 
+  const decodedToken =
+    verifyToken(token, "token") ||
     verifyToken(refreshToken, "refreshToken");
 
   if(!decodedToken) {
@@ -245,29 +292,48 @@ const deleteProject = async (req, res, next) => {
   };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
-  console.log(userID)
+
+  let connection;
 
   try {
-    const [ project ] = await pool.execute(
+    connection = await pool.getConnection();
+
+    // Start transaction
+    await connection.beginTransaction();
+
+    // Check if project exists
+    const [ projectRows ] = await connection.query(
       'SELECT * FROM projects WHERE project_id = ?',
       [projectID]
     );
 
-    if(project.length === 0) {
+    if(projectRows.length === 0) {
+      await connection.rollback(); // Rollback transaction if project not found
       return res.status(404).json({ message: `Project ${projectID} not found` });
     };
 
-    await pool.execute('DELETE FROM projects WHERE project_id = ?', [projectID]);
+    // Delete the project
+    await connection.query('DELETE FROM projects WHERE project_id = ?', [projectID]);
+
+    // Commit transaction
+    await connection.commit();
 
     return res.json({
       message: `Project ${projectID} deleted successfully`,
       newToken: getToken(userID),
-      newRefreshToken: getRefreshToken(userID)
+      newRefreshToken: getRefreshToken(userID),
     });
 
   } catch (error) {
-    console.error(error);
+    if(connection) {
+      await connection.rollback(); // Rollback on error
+    };
+    console.error("Error deleting project:", error);
     return res.status(500).json({ error: 'Failed to delete project' });
+  } finally {
+    if(connection) {
+      connection.release(); // Ensure the connection is released back to the pool
+    };
   };
 };
 
@@ -277,13 +343,12 @@ const deleteProject = async (req, res, next) => {
 const updateProjectOrder = async (req, res, next) => {
   const { new_project_order } = req.body;
   const authHeader = req.headers.authorization;
-  const refreshToken = req.headers.refreshtoken;
   const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers['x-refresh-token'];
 
   if(!token && !refreshToken) {
     return res.status(401).json({ message: 'Authorization or refresh token missing' });
   };
-
 
   const decodedToken = 
     verifyToken(token, "token") || 

@@ -43,6 +43,10 @@ const verifyToken = (token, tokenType) => {
 
 
 const decodeJWT = (token) => {
+  if(!token || typeof token !== 'string' || !token.includes('.')) {
+    return null;
+  };
+
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -51,7 +55,7 @@ const decodeJWT = (token) => {
   } catch (error) {
     console.error('Error decoding token:', error);
     return null;
-  }
+  };
 };
 
 // date format options: returns config obj for dates
