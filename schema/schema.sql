@@ -42,13 +42,13 @@ insert into
 VALUES
   -- mad gabs game
   (
-    '2023-09-08',
+    '2023-08-09',
     'Mad Gabs Game',
     'This Mad Gabs-inspired React game brings together wordplay and real-time speech recognition, utilizing the Web Speech API to create an engaging language experience. Players encounter jumbled word clusters on the screen that, when pronounced correctly, reveal familiar phrases. The game’s challenge lies in deciphering these seemingly nonsensical words and speaking them aloud in a way that matches the intended sound. Through the Web Speech API, the game captures and analyzes each attempt to determine if the player’s pronunciation aligns with the correct phrase, allowing progression to the next round for successful matches.\nUtilizing the API\'s SpeechRecognition feature, the game listens and processes players\' spoken input in real time. As players vocalize their guesses, the API compares their pronunciation with the stored answer, offering immediate feedback—such as visual cues or sounds—to indicate if they\’ve guessed correctly. If the attempt doesn\’t match, players are prompted to keep trying, with clues or hints available at different levels of difficulty, fostering a supportive yet challenging environment.\nThis game promotes active listening and speaking practice, with increasing complexity as players advance. A timer or scoring system adds an element of urgency, while a replay feature enables players to perfect their pronunciation. By incorporating the Web Speech API, the game delivers a fun, interactive experience that tests language skills and phonetic intuition in a playful and educational way.'
   ),
   -- little lemon
   (
-    '2024-02-01',
+    '2023-02-01',
     'Little Lemon Restaurant Page',
     'The "Little Lemon Restaurant" React app is a capstone project created as part of the Meta Front-End Web Developer course on Coursera, designed to showcase essential skills in building and managing interactive, user-friendly web applications. This app simulates a restaurant\'s online presence, featuring responsive menus, reservation forms, and dynamic content updates. Built with a modern front-end stack, the app leverages React components to handle user interactions seamlessly, providing a streamlined user experience across different devices.\nThrough this project, critical front-end skills such as component-based design, state management, and API integration come together to create a functional and visually engaging application. Users can explore menu items, make reservations, and learn more about the restaurant—all within a single-page app format that exemplifies best practices in responsive and accessible design. The "Little Lemon Restaurant" app demonstrates core competencies in front-end development, delivering a fully featured restaurant website that’s interactive, polished, and ready to enhance a business\'s online footprint.'
   ),
