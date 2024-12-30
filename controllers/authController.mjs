@@ -6,7 +6,14 @@ import {
   verifyToken,
   decodeJWT
 } from "../utils/utils.mjs";
+import { 
+  generateUploadURL
+ } from "../s3.js";
 import pool from '../dbClient.mjs';
+import dotenv from "dotenv";
+
+dotenv.config();
+
 
 // POST /api/auth/createuser
 const createUser = async (req, res) => {
@@ -100,9 +107,12 @@ const refreshToken = (req, res) => {
 
 // calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
 // POST/api/auth/getsignedurl
-const getSignedurl = (req, res) => {
+const getSignedurl = async (req, res) => {
+  const { dirname } = req.query;
 
-  return res.json("Here's that god damned signed url");
+  const url = await generateUploadURL(dirname);
+
+  return res.send({url});
 };
 
 
