@@ -81,28 +81,41 @@ const loginUser = async (req, res) => {
   };
 };
 
+
 // POST /api/auth/refreshtoken
 const refreshToken = (req, res) => {
-  const refreshToken = req.headers['x-refresh-token'];  
-  
-  try {
-    const { userID } = jwt.decode(refreshToken);
+  const refreshToken = req.headers['x-refresh-token'];
 
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'No refresh token provided' });
+  }
+
+  try {
+    const { userID, exp } = jwt.decode(refreshToken);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    // Check if refresh token has expired
+    if (exp < currentTimestamp) {
+      console.log('Refresh token expired');
+      return res.status(401).json({ error: 'Refresh token expired' });
+    }
+
+    // Generate new tokens
     const newToken = getToken(userID);
     const newRefreshToken = getRefreshToken(userID);
 
-    res.json({
-      message: "Token refreshed successfully",
-      userID: userID,
+    return res.json({
+      message: 'Token refreshed successfully',
+      userID,
       newToken,
-      newRefreshToken
+      newRefreshToken,
     });
-
   } catch (error) {
     console.error('Error refreshing token:', error);
     return res.status(401).json({ error: 'Invalid refresh token' });
   }
 };
+
 
 
 // calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
