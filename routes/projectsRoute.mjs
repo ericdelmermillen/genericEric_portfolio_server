@@ -9,7 +9,7 @@ import {
   updateProjectOrder
 } from "../controllers/projectsController.mjs";
 import { validateRequest } from "../middleware/middleware.mjs";
-import { paramsIsNumber } from "../utils/validationSchemas.mjs";
+import { paramsIsNumber, validProjectData } from "../utils/validationSchemas.mjs";
 
 const projectsRouter = express.Router();
 
@@ -31,10 +31,12 @@ projectsRouter.route('/project/:id')
 
 
 // post a new project
+// add validProjectData
 projectsRouter.route('/project/add')
-  .post(createProject);
+.post(createProject);
 
 // edit an existing project
+// add validProjectData
 projectsRouter.route('/project/edit/:id')
   .put(editProject);
 

@@ -1,4 +1,5 @@
 import pool from '../dbClient.mjs';
+import { format, parse } from "date-fns"; 
 import { 
   decodeJWT,
   getRefreshToken, 
@@ -218,7 +219,7 @@ const getProjectDetails = async (req, res) => {
       [projectId]
     );
 
-    const projectUrls = urlRows.map(row => ({ [row.type]: row.url }));
+    const projectUrls = urlRows.map(row => ({ [ row.type ]: row.url }));
 
     // Query project photos
     const [ photoRows ] = await connection.query(
@@ -258,15 +259,147 @@ const getProjectDetails = async (req, res) => {
 };
 
 
+// post project
 const createProject = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers['x-refresh-token'];
 
-  console.log("createProject")
-  return res.json(`Looks like a great project`);
+  if(!token && !refreshToken) {
+    return res.status(401).json({ message: 'Authorization or refresh token missing' });
+  };
+
+  const decodedToken =
+    verifyToken(token, "token") ||
+    verifyToken(refreshToken, "refreshToken");
+
+  if(!decodedToken) {
+    return res.status(401).json({ message: 'Authorization token invalid' });
+  };
+
+  const { 
+    project_date, 
+    project_title, 
+    project_description, 
+    project_urls, 
+    project_photos 
+  } = req.body;
+
+
+  // validate inputs here or in validation schema
+  // if (!project_date || !project_title || !project_description) {
+  //   return res.status(400).json({ message: "Missing required project fields" });
+  // }
+
+  const connection = await pool.getConnection(); 
+
+  let formattedDate;
+
+  // get formatted date
+  // make this a util function
+  try {
+    const parsedDate = parse(project_date, "dd-MM-yyyy", new Date());
+    formattedDate = format(parsedDate, "yyyy-MM-dd");
+  } catch (error) {
+    // release connection here?
+    return res.status(400).json({ message: "Invalid date format" });
+  };
+
+
+  try {
+    // Start transaction
+    await connection.beginTransaction();
+
+    // Insert the project into the `projects` table
+    const [ projectResult ] = await connection.execute(
+      `
+      INSERT INTO projects (project_date, project_title, project_description)
+      VALUES (?, ?, ?)
+    `,
+      [formattedDate, project_title, project_description]
+    );
+
+    const projectID = projectResult.insertId;
+
+    // Insert URLs into the `project_urls` table
+    for(const url of project_urls) {
+      const [ urlType ] = Object.keys(url);
+      const urlValue = url[urlType]; 
+
+      // Get the `type_id` from the `url_types` table
+      const [ typeRows ] = await connection.execute(
+        `
+        SELECT type_id FROM url_types WHERE url_type = ?
+      `,
+        [urlType]
+      );
+
+      if(typeRows.length === 0) {
+        throw new Error(`URL type "${urlType}" not found`);
+      }
+
+      const typeID = typeRows[0].type_id;
+
+      await connection.execute(
+        `
+        INSERT INTO project_urls (project_id, url_type, url)
+        VALUES (?, ?, ?)
+      `,
+        [projectID, typeID, urlValue]
+      );
+    };
+
+    // Insert photos into the `photos` table
+    for(const photo of project_photos) {
+      const { display_order, photo_url } = photo;
+
+      await connection.execute(
+        `
+        INSERT INTO photos (project_id, photo_url, display_order)
+        VALUES (?, ?, ?)
+      `,
+        [projectID, photo_url, display_order]
+      );
+    };
+
+    // Commit the transaction
+    await connection.commit();
+
+    return res.status(201).json({message: "Project created successfully"});
+  } catch (error) {
+    // Roll back the transaction on error
+    await connection.rollback();
+    console.error("Error creating project:", error);
+    return res.status(500).json({ message: "Error creating project", error });
+  } finally {
+    // Release the connection
+    connection.release();
+  }
 };
+
+
 
 // edit project by id
 const editProject = async (req, res) => {
   const projectId = req.params.id;
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers['x-refresh-token'];
+
+  if(!token && !refreshToken) {
+    return res.status(401).json({ message: 'Authorization or refresh token missing' });
+  };
+
+  const decodedToken =
+    verifyToken(token, "token") ||
+    verifyToken(refreshToken, "refreshToken");
+
+  if(!decodedToken) {
+    return res.status(401).json({ message: 'Authorization token invalid' });
+  };
+
+
+  console.log("editProject")
 
   return res.json(`Project ${projectId} edited successfully`);
 };

@@ -52,6 +52,26 @@ const validContactFormData = [
     .isEmail()
     .withMessage('Invalid email format')
   ];
+
+
+  // need to create validation to match project data
+  const validProjectData = [
+  body('name')
+    .notEmpty()
+    .withMessage('Name is required.')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2-50 characters long.'),
+  body('message')
+    .notEmpty()
+    .withMessage('Message is required')
+    .isLength({ min: 10, max: 500 })
+    .withMessage('Message must be between 10-500 characters long.'),
+  body('email')
+    .notEmpty()
+    .withMessage("Contact email required")
+    .isEmail()
+    .withMessage('Invalid email format')
+  ];
   
 
 export {
@@ -60,4 +80,5 @@ export {
   tokenSchema,
   refreshTokenSchema,
   validContactFormData,
+  validProjectData
 };

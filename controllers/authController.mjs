@@ -95,7 +95,7 @@ const refreshToken = (req, res) => {
     const currentTimestamp = Math.floor(Date.now() / 1000);
 
     // Check if refresh token has expired
-    if (exp < currentTimestamp) {
+    if(exp < currentTimestamp) {
       console.log('Refresh token expired');
       return res.status(401).json({ error: 'Refresh token expired' });
     }
@@ -121,7 +121,24 @@ const refreshToken = (req, res) => {
 // calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
 // POST/api/auth/getsignedurl
 const getSignedurl = async (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  const refreshToken = req.headers['x-refresh-token'];  
   const { dirname } = req.query;
+
+  if(!token || token === "null"|| !refreshToken || refreshToken === "null") {
+    console.log("unauthorized")
+    return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
+  };
+
+  const tokenIsValid = 
+    verifyToken(token, "token")
+    //  || 
+    // verifyToken(refreshToken, "refreshToken");
+
+  if(!tokenIsValid) {
+    return res.status(401).json({ message: 'Both authorization tokens are invalid' });
+  };
+
 
   const url = await generateUploadURL(dirname);
 
@@ -134,7 +151,7 @@ const logoutUser = (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
   const refreshToken = req.headers['x-refresh-token'];  
 
-  if(!token || !refreshToken) {
+  if(!token || token === "null"|| !refreshToken || refreshToken === "null") {
     return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
   };
 
