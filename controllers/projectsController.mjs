@@ -2,6 +2,7 @@ import pool from '../dbClient.mjs';
 import { format, parse } from "date-fns"; 
 import { 
   decodeJWT,
+  getFormattedDate,
   getRefreshToken, 
   getToken, 
   verifyToken 
@@ -11,8 +12,6 @@ import {
 
 
 // get portfolio summary
-// returns all project summaries
-// --image object name for image url (maybe send full url)
 const getPortfolioSummary = async (req, res) => {
   const limit = req.query.limit ? parseInt(req.query.limit) : null;
   const offset = req.query.offset ? parseInt(req.query.offset) : null;
@@ -54,13 +53,12 @@ const getPortfolioSummary = async (req, res) => {
   } catch (error) {
     console.error("Error fetching portfolio summary:", error);
     return res.status(500).json({ message: "Failed to fetch portfolio summary" });
-  }
+  };
 };
 
 
 // get all projects
 // returns entire project
-// --photo_object names
 const getProjects = async (req, res) => {
   try {
     const limit = Math.max(parseInt(req.query.limit) || 10, 1);
@@ -97,6 +95,14 @@ const getProjects = async (req, res) => {
     };
 
     const [ projects ] = await pool.query(query, queryParams);
+
+    // need to handle if there are no projects
+    if(!projects.length) {
+      return res.json({
+        projects,
+        isPaginationComplete: true
+      });
+    };
 
     const isFinalPage = projects[projects.length - 1].display_order === maxDisplayOrder;
 
@@ -274,6 +280,7 @@ const createProject = async (req, res) => {
     verifyToken(refreshToken, "refreshToken");
 
   if(!decodedToken) {
+    console.log("token issue");
     return res.status(401).json({ message: 'Authorization token invalid' });
   };
 
@@ -285,58 +292,51 @@ const createProject = async (req, res) => {
     project_photos 
   } = req.body;
 
-
-  // validate inputs here or in validation schema
-  // if (!project_date || !project_title || !project_description) {
-  //   return res.status(400).json({ message: "Missing required project fields" });
-  // }
-
   const connection = await pool.getConnection(); 
 
   let formattedDate;
 
-  // get formatted date
-  // make this a util function
   try {
-    const parsedDate = parse(project_date, "dd-MM-yyyy", new Date());
-    formattedDate = format(parsedDate, "yyyy-MM-dd");
+    formattedDate = getFormattedDate(project_date);
   } catch (error) {
-    // release connection here?
     return res.status(400).json({ message: "Invalid date format" });
   };
 
-
   try {
-    // Start transaction
     await connection.beginTransaction();
 
-    // Insert the project into the `projects` table
+    await connection.execute(
+      `
+      UPDATE projects
+      SET display_order = display_order + 1
+      `
+    );
+
+    // Insert the new project into the `projects` table with display_order = 1
     const [ projectResult ] = await connection.execute(
       `
-      INSERT INTO projects (project_date, project_title, project_description)
-      VALUES (?, ?, ?)
-    `,
-      [formattedDate, project_title, project_description]
+      INSERT INTO projects (project_date, project_title, project_description, display_order)
+      VALUES (?, ?, ?, ?)
+      `,
+      [formattedDate, project_title, project_description, 1]
     );
 
     const projectID = projectResult.insertId;
 
-    // Insert URLs into the `project_urls` table
     for(const url of project_urls) {
       const [ urlType ] = Object.keys(url);
-      const urlValue = url[urlType]; 
+      const urlValue = url[urlType];
 
-      // Get the `type_id` from the `url_types` table
       const [ typeRows ] = await connection.execute(
         `
         SELECT type_id FROM url_types WHERE url_type = ?
-      `,
+        `,
         [urlType]
       );
 
       if(typeRows.length === 0) {
         throw new Error(`URL type "${urlType}" not found`);
-      }
+      };
 
       const typeID = typeRows[0].type_id;
 
@@ -344,12 +344,11 @@ const createProject = async (req, res) => {
         `
         INSERT INTO project_urls (project_id, url_type, url)
         VALUES (?, ?, ?)
-      `,
+        `,
         [projectID, typeID, urlValue]
       );
     };
 
-    // Insert photos into the `photos` table
     for(const photo of project_photos) {
       const { display_order, photo_url } = photo;
 
@@ -357,26 +356,22 @@ const createProject = async (req, res) => {
         `
         INSERT INTO photos (project_id, photo_url, display_order)
         VALUES (?, ?, ?)
-      `,
+        `,
         [projectID, photo_url, display_order]
       );
     };
 
-    // Commit the transaction
     await connection.commit();
 
-    return res.status(201).json({message: "Project created successfully"});
+    return res.status(201).json({ message: "Project created successfully" });
   } catch (error) {
-    // Roll back the transaction on error
-    await connection.rollback();
     console.error("Error creating project:", error);
+    await connection.rollback();
     return res.status(500).json({ message: "Error creating project", error });
   } finally {
-    // Release the connection
     connection.release();
-  }
+  };
 };
-
 
 
 // edit project by id
@@ -398,10 +393,107 @@ const editProject = async (req, res) => {
     return res.status(401).json({ message: 'Authorization token invalid' });
   };
 
+  const { 
+    project_date, 
+    project_title, 
+    project_description, 
+    project_urls, 
+    project_photos 
+  } = req.body;
 
-  console.log("editProject")
+  const connection = await pool.getConnection();
 
-  return res.json(`Project ${projectId} edited successfully`);
+  let formattedDate;
+
+  try {
+    formattedDate = getFormattedDate(project_date);
+  } catch (error) {
+    return res.status(400).json({ message: "Invalid date format" });
+  };
+
+  try {
+    await connection.beginTransaction();
+
+    const [ updateProjectResult ] = await connection.execute(
+      `
+      UPDATE projects
+      SET
+        project_date = ?,
+        project_title = ?,
+        project_description = ?
+      WHERE project_id = ?
+      `,
+      [formattedDate, project_title, project_description, projectId]
+    );
+
+    if(updateProjectResult.affectedRows === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    };
+
+    // Update project URLs
+    if(project_urls) {
+      // Remove existing URLs and re-add them
+      await connection.execute(
+        `DELETE FROM project_urls WHERE project_id = ?`,
+        [projectId]
+      );
+
+      for(const url of project_urls) {
+        const [ urlType ] = Object.keys(url);
+        const urlValue = url[urlType];
+
+        const [ typeRows ] = await connection.execute(
+          `
+          SELECT type_id FROM url_types WHERE url_type = ?
+          `,
+          [urlType]
+        );
+
+        if(typeRows.length === 0) {
+          throw new Error(`URL type "${urlType}" not found`);
+        };
+
+        const typeID = typeRows[0].type_id;
+
+        await connection.execute(
+          `
+          INSERT INTO project_urls (project_id, url_type, url)
+          VALUES (?, ?, ?)
+          `,
+          [projectId, typeID, urlValue]
+        );
+      };
+    }
+
+    if(project_photos) {
+      await connection.execute(
+        `DELETE FROM photos WHERE project_id = ?`,
+        [projectId]
+      );
+
+      for(const photo of project_photos) {
+        const { display_order, photo_url } = photo;
+
+        await connection.execute(
+          `
+          INSERT INTO photos (project_id, photo_url, display_order)
+          VALUES (?, ?, ?)
+          `,
+          [projectId, photo_url, display_order]
+        );
+      };
+    };
+
+    await connection.commit();
+
+    return res.status(200).json({ message: "Project edited successfully" });
+  } catch (error) {
+    console.error("Error editing project:", error);
+    await connection.rollback();
+    return res.status(500).json({ message: "Error editing project", error });
+  } finally {
+    connection.release();
+  };
 };
 
 

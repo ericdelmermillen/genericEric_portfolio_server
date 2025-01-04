@@ -60,7 +60,7 @@ const deleteFiles = async (fileNames) => {
   } catch (error) {
     console.error("Error deleting files:", error);
     throw error;
-  }
+  };
 };
 
 export {

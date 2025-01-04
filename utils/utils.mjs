@@ -1,5 +1,6 @@
 import jwt from'jsonwebtoken';
 import dotenv from "dotenv";
+import { format, parse } from "date-fns"; 
 dotenv.config();
 
 const JWT_TOKEN_EXPIRATION_INTERVAL = process.env.JWT_TOKEN_EXPIRATION_INTERVAL;
@@ -63,11 +64,17 @@ const dateFormatOptions = () => (
   { year: 'numeric', month: '2-digit', day: '2-digit' }
 );
 
+const getFormattedDate = (project_date) => {
+  const parsedDate = parse(project_date, "dd-MM-yyyy", new Date());
+  return format(parsedDate, "yyyy-MM-dd");
+};
+
 
 export {
   getToken,
   verifyToken,
   getRefreshToken,
   decodeJWT,
-  dateFormatOptions
+  dateFormatOptions,
+  getFormattedDate
 };

@@ -86,7 +86,7 @@ const loginUser = async (req, res) => {
 const refreshToken = (req, res) => {
   const refreshToken = req.headers['x-refresh-token'];
 
-  if (!refreshToken) {
+  if(!refreshToken) {
     return res.status(401).json({ error: 'No refresh token provided' });
   }
 
@@ -111,7 +111,7 @@ const refreshToken = (req, res) => {
       newRefreshToken,
     });
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    console.log('Error refreshing token:', error);
     return res.status(401).json({ error: 'Invalid refresh token' });
   }
 };
@@ -132,13 +132,12 @@ const getSignedurl = async (req, res) => {
 
   const tokenIsValid = 
     verifyToken(token, "token")
-    //  || 
-    // verifyToken(refreshToken, "refreshToken");
+     || 
+    verifyToken(refreshToken, "refreshToken");
 
   if(!tokenIsValid) {
     return res.status(401).json({ message: 'Both authorization tokens are invalid' });
   };
-
 
   const url = await generateUploadURL(dirname);
 
