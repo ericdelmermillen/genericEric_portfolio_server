@@ -58,15 +58,12 @@ const refreshTokenSchema = [
     .withMessage('Refresh token must be a string')
     .custom((refreshToken) => {
 
-      console.log(refreshToken)
-
       // Validate the refresh token format as JWT format
       if(!/^[A-Za-z0-9-._~+\/]+=*$/.test(refreshToken)) {
         return Promise.reject('Invalid token format'); // Reject with a custom error message
       };
 
       if(!verifyToken(refreshToken, "refreshToken")) {
-        console.log("refreshToken not verified")
         return Promise.reject('Invalid refresh token');
       };
 

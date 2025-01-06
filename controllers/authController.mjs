@@ -112,7 +112,7 @@ const refreshToken = (req, res) => {
 };
 
 
-// could just enforce dirname o project-images since client expects that dirname
+// could just enforce dirname === project-images since client expects that dirname
 // POST/api/auth/getsignedurl
 const getSignedurl = async (req, res) => {
   const { dirname } = req.query;
@@ -131,14 +131,6 @@ const getSignedurl = async (req, res) => {
 const logoutUser = (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
   const refreshToken = req.headers['x-refresh-token'];  
-
-  // const tokenIsValid = 
-  //   verifyToken(token, "token") || 
-  //   verifyToken(refreshToken, "refreshToken");
-
-  // if(!tokenIsValid) {
-  //   return res.status(401).json({ message: 'Both authorization tokens are invalid' });
-  // };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
