@@ -1,5 +1,5 @@
 import pool from '../dbClient.mjs';
-import { format, parse } from "date-fns"; 
+import { deleteFiles } from '../s3.js';
 import { 
   decodeJWT,
   getFormattedDate,
@@ -8,10 +8,14 @@ import {
   verifyToken 
 } from '../utils/utils.mjs';
 
+
+const AWS_BUCKET_PATH = process.env.AWS_BUCKET_PATH;
+
 // ***need validations for all requests that are protected
 
 
 // get portfolio summary
+// GET /api/projects/portfoliosummary
 const getPortfolioSummary = async (req, res) => {
   const limit = req.query.limit ? parseInt(req.query.limit) : null;
   const offset = req.query.offset ? parseInt(req.query.offset) : null;
@@ -40,7 +44,7 @@ const getPortfolioSummary = async (req, res) => {
       queryParams.push(offset);
     };
 
-    const [rows] = await pool.query(query, queryParams);
+    const [ rows ] = await pool.query(query, queryParams);
 
     const projectSummaries = rows.map(row => ({
       project_id: row.id,
@@ -59,6 +63,7 @@ const getPortfolioSummary = async (req, res) => {
 
 // get all projects
 // returns entire project
+// GET /api/projects/all
 const getProjects = async (req, res) => {
   try {
     const limit = Math.max(parseInt(req.query.limit) || 10, 1);
@@ -171,7 +176,7 @@ const getProjects = async (req, res) => {
 
 
 // getProjectDetails returns all details/info for the project
-// to populate the AddOrEdit project page (edit view) for admin to edit project
+// GET /api/projects/project/:id
 const getProjectDetails = async (req, res) => {
   const projectId = req.params.id;
   const authHeader = req.headers.authorization;
@@ -266,6 +271,7 @@ const getProjectDetails = async (req, res) => {
 
 
 // post project
+// POST /api/projects/add
 const createProject = async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -280,7 +286,6 @@ const createProject = async (req, res) => {
     verifyToken(refreshToken, "refreshToken");
 
   if(!decodedToken) {
-    console.log("token issue");
     return res.status(401).json({ message: 'Authorization token invalid' });
   };
 
@@ -292,15 +297,21 @@ const createProject = async (req, res) => {
     project_photos 
   } = req.body;
 
+  console.log(project_date)
+
   const connection = await pool.getConnection(); 
 
   let formattedDate;
 
   try {
+    // console.log(getFormattedDate(project_date)) // 12-18-2024
     formattedDate = getFormattedDate(project_date);
-  } catch (error) {
+  } catch(error) {
+    console.log(project_date)
     return res.status(400).json({ message: "Invalid date format" });
   };
+
+  const uploadedPhotoUrls = project_photos.map(photo => photo.photo_url);
 
   try {
     await connection.beginTransaction();
@@ -366,7 +377,22 @@ const createProject = async (req, res) => {
     return res.status(201).json({ message: "Project created successfully" });
   } catch (error) {
     console.error("Error creating project:", error);
-    await connection.rollback();
+
+    // Rollback database transaction
+    if(connection) {
+      await connection.rollback();
+    };
+
+    // Cleanup: delete uploaded photos if any
+    if(uploadedPhotoUrls.length > 0) {
+      try {
+        await deleteFiles(uploadedPhotoUrls);
+        console.log("Successfully deleted uploaded photos from S3");
+      } catch (cleanupError) {
+        console.error("Error cleaning up uploaded photos:", cleanupError);
+      };
+    };
+
     return res.status(500).json({ message: "Error creating project", error });
   } finally {
     connection.release();
@@ -375,6 +401,7 @@ const createProject = async (req, res) => {
 
 
 // edit project by id
+// PUT /api/projects/edit/:id
 const editProject = async (req, res) => {
   const projectId = req.params.id;
   const authHeader = req.headers.authorization;
@@ -497,7 +524,7 @@ const editProject = async (req, res) => {
 };
 
 
-// delete project by id
+// DELETE /api/projects/edit/:id
 const deleteProject = async (req, res) => {
   const projectID = req.params.id;
   const authHeader = req.headers.authorization;
@@ -523,7 +550,6 @@ const deleteProject = async (req, res) => {
   try {
     connection = await pool.getConnection();
 
-    // Start transaction
     await connection.beginTransaction();
 
     // Check if project exists
@@ -535,6 +561,18 @@ const deleteProject = async (req, res) => {
     if(projectRows.length === 0) {
       await connection.rollback(); // Rollback transaction if project not found
       return res.status(404).json({ message: `Project ${projectID} not found` });
+    };
+
+    const [ photoRows ] = await connection.query(
+      'SELECT photo_url FROM photos WHERE project_id = ?',
+      [projectID]
+    );
+
+    const photoUrls = photoRows.map((row) => row.photo_url);
+
+    // Pass the photo URLs to deleteFiles if any exist
+    if(photoUrls.length > 0) {
+      await deleteFiles(photoUrls); // Ensure this function is imported and accessible
     };
 
     // Delete the project
@@ -564,7 +602,7 @@ const deleteProject = async (req, res) => {
 
 
 // add validations for project_id and display_order to be number
-// update project order for all projects
+// PATCH /api/projects/updateorder
 const updateProjectOrder = async (req, res) => {
   const { new_project_order } = req.body;
   const authHeader = req.headers.authorization;

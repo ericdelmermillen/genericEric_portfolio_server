@@ -8,6 +8,5 @@ const contactRouter = express.Router();
 
 contactRouter.route("/")
 .post(validateRequest(validContactFormData), sendContactForm);
-  // .post(sendContactForm);
 
 export default contactRouter;

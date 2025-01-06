@@ -6,7 +6,11 @@ import {
   getSignedurl,
   logoutUser 
 } from "../controllers/authController.mjs";
-import{ emailAndPasswordAreValid, refreshTokenSchema } from '../utils/validationSchemas.mjs';
+import{ 
+  emailAndPasswordAreValid, 
+  tokenSchema, 
+  refreshTokenSchema
+ } from '../utils/validationSchemas.mjs';
 import { validateRequest } from "../middleware/middleware.mjs";
 const authRouter = express.Router();
 
@@ -21,20 +25,25 @@ authRouter.route("/loginuser")
 .post(validateRequest(emailAndPasswordAreValid), loginUser);
 
 
-// generate refresh token
+// POST /api/auth/refreshtoken
 authRouter.route("/refreshtoken")
-  .post(
-    // validateRequest(refreshTokenSchema), 
-  refreshToken);
-  
+  .post(validateRequest(refreshTokenSchema), refreshToken);
 
+
+// POST /api/auth/getsignedurl
 authRouter.route("/getsignedurl")
-  .post(getSignedurl);
+  .post(
+    validateRequest(tokenSchema), 
+    validateRequest(refreshTokenSchema), 
+    getSignedurl);
   
   
-  // logoutUser route
+// POST /api/auth/logoutuser
 authRouter.route("/logoutuser")
-  .post(logoutUser);
+  .post(
+    validateRequest(tokenSchema), 
+    validateRequest(refreshTokenSchema), 
+    logoutUser);
 
 
 export default authRouter;

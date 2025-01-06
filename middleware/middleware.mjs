@@ -7,7 +7,7 @@ const validateToken = (req, res, next) => {
   if(!token || !verifyToken(token)) {
     console.log("rejected from middleware")
     return res.status(401).send({ message: "unauthorized" });
-  }
+  };
 
   next();
 };

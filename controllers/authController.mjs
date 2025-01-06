@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import { 
   getToken,
   getRefreshToken,
-  verifyToken,
   decodeJWT
 } from "../utils/utils.mjs";
 import { 
@@ -42,7 +41,7 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error('Error creating user:', error);
     return res.status(500).json({ message: "Database error creating user" });
-  }
+  };
 };
 
 
@@ -63,7 +62,7 @@ const loginUser = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user[0].password);
     if(!isPasswordValid) {
       return res.status(401).json({ message: "Email and/or password incorrect" });
-    }
+    };
 
     const userID = user[0].id;
     const token = getToken(userID);
@@ -86,10 +85,6 @@ const loginUser = async (req, res) => {
 const refreshToken = (req, res) => {
   const refreshToken = req.headers['x-refresh-token'];
 
-  if(!refreshToken) {
-    return res.status(401).json({ error: 'No refresh token provided' });
-  }
-
   try {
     const { userID, exp } = jwt.decode(refreshToken);
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -98,7 +93,7 @@ const refreshToken = (req, res) => {
     if(exp < currentTimestamp) {
       console.log('Refresh token expired');
       return res.status(401).json({ error: 'Refresh token expired' });
-    }
+    };
 
     // Generate new tokens
     const newToken = getToken(userID);
@@ -113,30 +108,17 @@ const refreshToken = (req, res) => {
   } catch (error) {
     console.log('Error refreshing token:', error);
     return res.status(401).json({ error: 'Invalid refresh token' });
-  }
+  };
 };
 
 
-
-// calls aws to get a temporary signed url for posting to s3 bucket/deleting from s3 bucket
+// could just enforce dirname o project-images since client expects that dirname
 // POST/api/auth/getsignedurl
 const getSignedurl = async (req, res) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  const refreshToken = req.headers['x-refresh-token'];  
   const { dirname } = req.query;
-
-  if(!token || token === "null"|| !refreshToken || refreshToken === "null") {
-    console.log("unauthorized")
-    return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
-  };
-
-  const tokenIsValid = 
-    verifyToken(token, "token")
-     || 
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!tokenIsValid) {
-    return res.status(401).json({ message: 'Both authorization tokens are invalid' });
+  
+  if(!dirname) {
+    return res.status(400).json({ message: 'Dirname required' });
   };
 
   const url = await generateUploadURL(dirname);
@@ -150,17 +132,13 @@ const logoutUser = (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
   const refreshToken = req.headers['x-refresh-token'];  
 
-  if(!token || token === "null"|| !refreshToken || refreshToken === "null") {
-    return res.status(401).json({ message: 'Authorization token or refresh token is missing' });
-  };
+  // const tokenIsValid = 
+  //   verifyToken(token, "token") || 
+  //   verifyToken(refreshToken, "refreshToken");
 
-  const tokenIsValid = 
-    verifyToken(token, "token") || 
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!tokenIsValid) {
-    return res.status(401).json({ message: 'Both authorization tokens are invalid' });
-  };
+  // if(!tokenIsValid) {
+  //   return res.status(401).json({ message: 'Both authorization tokens are invalid' });
+  // };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 

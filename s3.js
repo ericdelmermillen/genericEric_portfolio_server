@@ -11,6 +11,7 @@ dotenv.config();
 
 const AWS_REGION = process.env.AWS_REGION;
 const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+const AWS_DIRNAME = process.env.AWS_DIRNAME;
 const AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY;
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
 
@@ -45,11 +46,12 @@ const generateUploadURL = async (dirname) => {
 
 // Delete multiple files function using SDK v3
 const deleteFiles = async (fileNames) => {
+
   try {
     const deletePromises = fileNames.map(async (fileName) => {
       const deleteParams = {
         Bucket: AWS_BUCKET_NAME,
-        Key: fileName
+        Key: `${AWS_DIRNAME}/${fileName}`
       };
       const response = await s3Client.send(new DeleteObjectCommand(deleteParams));
       return response;
