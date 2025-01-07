@@ -4,21 +4,14 @@ const EMAIL = process.env.EMAIL;
 const PASSWORD = process.env.PASSWORD;
 const subject = "Contact form submission from genericeric.dev"
 
+
+// POST /api/contact/
 const sendContactForm = async (req, res) => {
   const { 
     name, 
     email, 
     message 
   } = req.body;
-
-  // simpler config object: can use either but this one requires less set up
-  // const config = {
-  //   service: 'gmail',
-  //   auth: {
-  //     user: EMAIL,
-  //     pass: PASSWORD,
-  //   }
-  // };
 
   const config = {
     host: 'smtp.gmail.com',
@@ -60,7 +53,7 @@ const emailMessage = {
   } catch(error) {
     console.error('Error sending email:', error);
     return res.status(500).json({ error: "Failed to send email." });
-  }
+  };
 };
 
 export {

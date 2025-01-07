@@ -277,9 +277,9 @@ const createProject = async (req, res) => {
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers['x-refresh-token'];
 
-  if(!token && !refreshToken) {
-    return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  };
+  // if(!token && !refreshToken) {
+  //   return res.status(401).json({ message: 'Authorization or refresh token missing' });
+  // };
 
   const decodedToken =
     verifyToken(token, "token") ||

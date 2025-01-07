@@ -40,8 +40,8 @@ projectsRouter.route('/project/:id')
 // POST /api/projects/add
 projectsRouter.route('/project/add')
 .post(
-  // validateRequest(tokenSchema), 
-  // validateRequest(refreshTokenSchema), 
+  validateRequest(tokenSchema), 
+  validateRequest(refreshTokenSchema), 
   validateRequest(validContactFormData), 
   createProject);
 
