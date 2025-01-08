@@ -9,7 +9,12 @@ import {
   updateProjectOrder
 } from "../controllers/projectsController.mjs";
 import { validateRequest } from "../middleware/middleware.mjs";
-import { paramsIsNumber, refreshTokenSchema, tokenSchema, validContactFormData, validProjectData } from "../utils/validationSchemas.mjs";
+import { 
+  paramsIsNumber, 
+  validateAuth,
+  validProjectData,
+  validProjectOrderData
+} from "../utils/validationSchemas.mjs";
 
 const projectsRouter = express.Router();
 
@@ -26,13 +31,12 @@ projectsRouter.route('/all')
   .get(getProjects);
 
 
-// get all details for the project
+// get all details for the project for editing a project
 // GET /api/projects/project/:id
 projectsRouter.route('/project/:id')
   .get(
     validateRequest(paramsIsNumber), 
-    validateRequest(tokenSchema), 
-    validateRequest(refreshTokenSchema), 
+    validateRequest(validateAuth), 
     getProjectDetails);
 
 
@@ -40,28 +44,35 @@ projectsRouter.route('/project/:id')
 // POST /api/projects/add
 projectsRouter.route('/project/add')
 .post(
-  validateRequest(tokenSchema), 
-  validateRequest(refreshTokenSchema), 
-  validateRequest(validContactFormData), 
+  validateRequest(validateAuth), 
+  validateRequest(validProjectData), 
   createProject);
 
 
 // edit an existing project
-// add validProjectData
 // PUT /api/projects/edit/:id
 projectsRouter.route('/project/edit/:id')
-  .put(editProject);
+  .put(
+    validateRequest(validateAuth), 
+    validateRequest(validProjectData), 
+    editProject);
 
 
 // DELETE /api/projects/edit/:id
 projectsRouter.route('/project/delete/:id')
-  .delete(validateRequest(paramsIsNumber), deleteProject);
+  .delete(
+    validateRequest(validateAuth), 
+    validateRequest(paramsIsNumber), 
+    deleteProject);
 
 
 // update project order
 // PATCH /api/projects/updateorder
 projectsRouter.route('/updateorder')
-  .patch(updateProjectOrder);
+  .patch(
+    validateRequest(validateAuth), 
+    validateRequest(validProjectOrderData), 
+    updateProjectOrder);
 
 
 export default projectsRouter;

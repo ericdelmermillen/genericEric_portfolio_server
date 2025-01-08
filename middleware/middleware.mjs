@@ -20,9 +20,10 @@ const validateRequest = (validations) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
       const errorMsgs = errors.array().map(error => error.msg);
-      console.log(errorMsgs)
+      console.log(errorMsgs);
       return res.status(400).json({ errors: errorMsgs });
-    }
+    };
+    
     next();
   };
 };

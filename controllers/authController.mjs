@@ -1,9 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { 
-  getToken,
-  getRefreshToken,
-  decodeJWT
+  decodeJWT,
+  getFreshTokens
 } from "../utils/utils.mjs";
 import { 
   generateUploadURL
@@ -65,14 +64,13 @@ const loginUser = async (req, res) => {
     };
 
     const userID = user[0].id;
-    const token = getToken(userID);
-    const refreshToken = getRefreshToken(userID);
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
     
     return res.json({
       message: "Login successful",
       userID: userID,
-      token,
-      refreshToken
+      token: newToken,
+      refreshToken: newRefreshToken
     });
   } catch (error) {
     console.error(`Error logging in user: ${error}`);
@@ -96,8 +94,7 @@ const refreshToken = (req, res) => {
     };
 
     // Generate new tokens
-    const newToken = getToken(userID);
-    const newRefreshToken = getRefreshToken(userID);
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
 
     return res.json({
       message: 'Token refreshed successfully',

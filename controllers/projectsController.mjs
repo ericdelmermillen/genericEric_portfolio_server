@@ -3,15 +3,11 @@ import { deleteFiles } from '../s3.js';
 import { 
   decodeJWT,
   getFormattedDate,
-  getRefreshToken, 
-  getToken, 
-  verifyToken 
+  getFreshTokens
 } from '../utils/utils.mjs';
 
 
 const AWS_BUCKET_PATH = process.env.AWS_BUCKET_PATH;
-
-// ***need validations for all requests that are protected
 
 
 // get portfolio summary
@@ -61,8 +57,7 @@ const getPortfolioSummary = async (req, res) => {
 };
 
 
-// get all projects
-// returns entire project
+// get all projects: returns entire project for projects page
 // GET /api/projects/all
 const getProjects = async (req, res) => {
   try {
@@ -175,25 +170,13 @@ const getProjects = async (req, res) => {
 };
 
 
-// getProjectDetails returns all details/info for the project
+// getProjectDetails returns all data for the project: for edit project
 // GET /api/projects/project/:id
 const getProjectDetails = async (req, res) => {
   const projectId = req.params.id;
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers['x-refresh-token'];
-
-  if(!token && !refreshToken) {
-    return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  };
-
-  const decodedToken =
-    verifyToken(token, "token") ||
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!decodedToken) {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  };
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
@@ -250,6 +233,8 @@ const getProjectDetails = async (req, res) => {
       photo_url: photo.photo_url
     }));
 
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
     // Construct the response
     const projectDetails = {
       project_id: project.project_id,
@@ -259,8 +244,8 @@ const getProjectDetails = async (req, res) => {
       project_description: project.project_description,
       project_urls: projectUrls,
       project_photos: projectPhotos,
-      newToken: getToken(userID),
-      newRefreshToken: getRefreshToken(userID)
+      newToken: newToken,
+      newRefreshToken: newRefreshToken
     };
 
     return res.json(projectDetails);
@@ -272,23 +257,8 @@ const getProjectDetails = async (req, res) => {
 
 // post project
 // POST /api/projects/add
+// *** procted route: send back new tokens
 const createProject = async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  const refreshToken = req.headers['x-refresh-token'];
-
-  // if(!token && !refreshToken) {
-  //   return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  // };
-
-  const decodedToken =
-    verifyToken(token, "token") ||
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!decodedToken) {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  };
-
   const { 
     project_date, 
     project_title, 
@@ -297,14 +267,13 @@ const createProject = async (req, res) => {
     project_photos 
   } = req.body;
 
-  console.log(project_date)
+  // return res.json({ message: 'Alaye kilowa mother fucker' });
 
   const connection = await pool.getConnection(); 
 
   let formattedDate;
 
   try {
-    // console.log(getFormattedDate(project_date)) // 12-18-2024
     formattedDate = getFormattedDate(project_date);
   } catch(error) {
     console.log(project_date)
@@ -402,23 +371,9 @@ const createProject = async (req, res) => {
 
 // edit project by id
 // PUT /api/projects/edit/:id
+// *** procted route: send back new tokens
 const editProject = async (req, res) => {
   const projectId = req.params.id;
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  const refreshToken = req.headers['x-refresh-token'];
-
-  if(!token && !refreshToken) {
-    return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  };
-
-  const decodedToken =
-    verifyToken(token, "token") ||
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!decodedToken) {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  };
 
   const { 
     project_date, 
@@ -531,18 +486,6 @@ const deleteProject = async (req, res) => {
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers['x-refresh-token'];
 
-  if(!token && !refreshToken) {
-    return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  };
-
-  const decodedToken =
-    verifyToken(token, "token") ||
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!decodedToken) {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  };
-
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
   let connection;
@@ -581,10 +524,12 @@ const deleteProject = async (req, res) => {
     // Commit transaction
     await connection.commit();
 
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
     return res.json({
       message: `Project ${projectID} deleted successfully`,
-      newToken: getToken(userID),
-      newRefreshToken: getRefreshToken(userID),
+      newToken: newToken,
+      newRefreshToken: newRefreshToken,
     });
 
   } catch (error) {
@@ -609,24 +554,9 @@ const updateProjectOrder = async (req, res) => {
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers['x-refresh-token'];
 
-  if(!token && !refreshToken) {
-    return res.status(401).json({ message: 'Authorization or refresh token missing' });
-  };
-
-  const decodedToken = 
-    verifyToken(token, "token") || 
-    verifyToken(refreshToken, "refreshToken");
-
-  if(!decodedToken) {
-    return res.status(401).json({ message: 'Authorization token invalid' });
-  };
-
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
-  // can move this to validation schema
-  if(!Array.isArray(new_project_order) || new_project_order.length === 0) {
-    return res.status(400).json({ message: 'Invalid input. Expected an array of project orders.' });
-  };
+  // return res.json({ message: 'Alaye kilowa mother fucker' });
 
   const connection = await pool.getConnection();
 
@@ -646,12 +576,14 @@ const updateProjectOrder = async (req, res) => {
 
     await connection.commit();
 
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
     return res.json({
       message: 'Project order updated successfully',
-      newToken: getToken(userID),
-      newRefreshToken: getRefreshToken(userID)
+      newToken: newToken,
+      newRefreshToken: newRefreshToken
     });
-  } catch (err) {
+  } catch(err) {
     await connection.rollback();
     console.error(err);
     return res.status(500).json({ message: 'Failed to update project order' });
