@@ -26,6 +26,29 @@ const isValidURL = (str) => {
 };
 
 
+// test date validity for "25-12-2025" date format
+const isDateValid = (project_date) => {
+  const validDateFormat = /^\d{2}-\d{2}-\d{4}$/;
+
+  if(!validDateFormat.test(project_date)) {
+    return false;
+  };
+
+  const [ day, month, year ] = project_date.split('-').map(Number);
+  
+  if(month < 1 || month > 12) {
+    return false;
+  };
+  
+  const daysInMonth = new Date(year, month, 0).getDate(); // Get the last day of the month
+  if(day < 1 || day > daysInMonth) {
+    return false;
+  };
+
+  return true;
+};
+
+
 // generate jwt token
 const getToken = (userID) => {
   return jwt.sign({ userID }, JWT_SECRET, { expiresIn: JWT_TOKEN_EXPIRATION_INTERVAL });
@@ -110,6 +133,7 @@ const isValidAWSObj = (name) => {
 
 export {
   isValidURL,
+  isDateValid,
   getToken,
   verifyToken,
   getRefreshToken,

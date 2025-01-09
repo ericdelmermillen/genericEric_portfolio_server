@@ -257,8 +257,14 @@ const getProjectDetails = async (req, res) => {
 
 // post project
 // POST /api/projects/add
-// *** procted route: send back new tokens
 const createProject = async (req, res) => {
+  // return res.json({message: "Yipee cayay motherfucker"});
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers['x-refresh-token'];
+
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+
   const { 
     project_date, 
     project_title, 
@@ -276,7 +282,6 @@ const createProject = async (req, res) => {
   try {
     formattedDate = getFormattedDate(project_date);
   } catch(error) {
-    console.log(project_date)
     return res.status(400).json({ message: "Invalid date format" });
   };
 
@@ -343,7 +348,13 @@ const createProject = async (req, res) => {
 
     await connection.commit();
 
-    return res.status(201).json({ message: "Project created successfully" });
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
+    return res.status(201).json({ 
+      message: "Project created successfully",
+      newToken,
+      newRefreshToken
+    });
   } catch (error) {
     console.error("Error creating project:", error);
 
@@ -371,9 +382,13 @@ const createProject = async (req, res) => {
 
 // edit project by id
 // PUT /api/projects/edit/:id
-// *** procted route: send back new tokens
 const editProject = async (req, res) => {
   const projectId = req.params.id;
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1];
+  const refreshToken = req.headers['x-refresh-token'];
+
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
   const { 
     project_date, 
@@ -468,7 +483,13 @@ const editProject = async (req, res) => {
 
     await connection.commit();
 
-    return res.status(200).json({ message: "Project edited successfully" });
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
+    return res.status(200).json({ 
+      message: "Project edited successfully",
+      newToken,
+      newRefreshToken 
+    });
   } catch (error) {
     console.error("Error editing project:", error);
     await connection.rollback();
@@ -580,8 +601,8 @@ const updateProjectOrder = async (req, res) => {
 
     return res.json({
       message: 'Project order updated successfully',
-      newToken: newToken,
-      newRefreshToken: newRefreshToken
+      newToken,
+      newRefreshToken
     });
   } catch(err) {
     await connection.rollback();

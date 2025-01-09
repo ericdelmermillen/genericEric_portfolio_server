@@ -44,7 +44,7 @@ projectsRouter.route('/project/:id')
 // POST /api/projects/add
 projectsRouter.route('/project/add')
 .post(
-  validateRequest(validateAuth), 
+  // validateRequest(validateAuth), 
   validateRequest(validProjectData), 
   createProject);
 

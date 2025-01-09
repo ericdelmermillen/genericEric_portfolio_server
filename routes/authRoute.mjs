@@ -36,7 +36,7 @@ authRouter.route("/refreshtoken")
     refreshToken);
 
 
-// only protected route that does not send fresh tokens
+// protected route that does not send fresh tokens
 // POST /api/auth/getsignedurl
 authRouter.route("/getsignedurl")
   .post(

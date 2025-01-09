@@ -1,5 +1,10 @@
 import { body, param, header } from'express-validator';
-import { isValidAWSObj, isValidURL, verifyToken } from './utils.mjs';
+import { 
+  isDateValid, 
+  isValidAWSObj, 
+  isValidURL, 
+  verifyToken 
+} from './utils.mjs';
 
 const paramsIsNumber = [
   param('id')
@@ -105,23 +110,14 @@ const validContactFormData = [
 
 const validProjectData = [
   body('project_date')
-    .notEmpty()
-    .withMessage('Project date is required.')
-    .matches(/^\d{2}-\d{2}-\d{4}$/)
-    .withMessage('Project date must be in the format DD-MM-YYYY.')
-    .custom((value) => {
+    .custom((project_date) => {
 
-      const [ day, month, year ] = value.split('-').map(Number);
-
-      // Validate month
-      if(month < 1 || month > 12) {
-        return Promise.reject('Invalid month in project date.');
+      if(!project_date) {
+        return Promise.reject('Project date missing.');
       };
 
-      // Validate day for the given month
-      const daysInMonth = new Date(year, month, 0).getDate(); // Get the last day of the month
-      if(day < 1 || day > daysInMonth) {
-        return Promise.reject('Invalid day in project date.');
+      if(!isDateValid(project_date)) {
+        return Promise.reject('Project date is invalid.');
       };
 
       return true;
@@ -129,41 +125,32 @@ const validProjectData = [
 
   body('project_title')
     .notEmpty()
-    .withMessage('Title is required.')
+    .withMessage('Project title is required.')
     .isString()
-    .withMessage('Title must be a string.')
+    .withMessage('Project title must be a string.')
     .isLength({ min: 5, max: 50 })
-    .withMessage('Title must be between 5-50 characters long.'),
+    .withMessage('Project title must be between 5-50 characters long.'),
   
   body('project_description')
     .notEmpty()
-    .withMessage('Description is required.')
+    .withMessage('Project description is required.')
     .isString()
-    .withMessage('Description must be a string.')
+    .withMessage('Project description must be a string.')
     .isLength({ min: 25, max: 2000 })
-    .withMessage('Description must be between 25-2000 characters long.'),
+    .withMessage('Project description must be between 25-2000 characters long.'),
     
   body('project_urls')
-    .isArray({ min: 1, max: 4 })
-    .withMessage('Project URLs must be an array with at least one and at most four URLs.')
     .custom(async (urls) => {
+      
+      const allURLSAreObjs = urls.every(url => typeof url === "object");
 
-      // if(!Array.isArray(urls)) {
-      //   return Promise.reject('Project URLs must be an array.');
-      // };
-      
-      // if(urls.length < 1) {
-      //   return Promise.reject('At least one project Url required.');
-      // };
-      
-      // if(urls.length > 4) {
-      //   return Promise.reject('Maximum 4 project Urls per project.');
-      // };
+      if(!Array.isArray(urls) || urls.length < 1 || urls.length > 4 || !allURLSAreObjs) {
+        return Promise.reject('Project URLs must be an array containing 1-4 url objects.');
+      };
 
       const objKeys = [];
       const objValues = [];
 
-      // Check that all items in the array are objects
       for(const urlObj of urls) {
         
         if(typeof urlObj !== 'object') {
@@ -186,7 +173,6 @@ const validProjectData = [
         return acc;
       }, {});
       
-
       const validKeys = [
         "Deployed Url",
         "Youtube Video",
@@ -194,10 +180,8 @@ const validProjectData = [
         "Github (Server)"
       ];
 
-      // Check if all keys in the keyCountMap are valid
       const allKeysValid = Object.keys(keyCountMap).every(key => validKeys.includes(key));
 
-      
       if(!allKeysValid) {
         return Promise.reject('Invalid keys in project URLs.');
       };
@@ -208,12 +192,17 @@ const validProjectData = [
         return Promise.reject('Some keys in the project URLs are duplicates.');
       };
 
-      const allURLsValid = objValues.reduce((acc, url) => {
+      const allValuesAreStrings = objValues.reduce((acc, curr) => acc && typeof curr === "string", true);
+
+      if(!allValuesAreStrings) {
+        return Promise.reject('All project Urls must be strings.');
+      };
+
+      const allURLsAreValid = objValues.reduce((acc, url) => {
         return acc && isValidURL(url);
       }, true);
 
-
-      if(!allURLsValid) {
+      if(!allURLsAreValid) {
         return Promise.reject('One or more project urls are invalid');
       };
       
@@ -225,36 +214,54 @@ const validProjectData = [
   body('project_photos')
     .custom(async (photos) => {
 
-      if(!Array.isArray(photos)) {
-        return Promise.reject('Project photos must be an array.');
+      const allPhotosAreObjs = photos.every(photo => typeof photo === "object");
+
+      if(!Array.isArray(photos) || !allPhotosAreObjs || photos.length < 1 || photos.length > 4) {
+        return Promise.reject('Project photos must be an array of 1-4 objects.');
       };
 
-      if(photos.length < 1) {
-        return Promise.reject('Minimum 1 photo per project.');
-      };
+      const allPhotosHaveRequiredProperties = photos.reduce(
+        (acc, photo) =>
+          acc &&
+          Object.keys(photo).length === 2 && // Ensure exactly 2 properties
+          photo.hasOwnProperty("display_order") && // Check for display_order key
+          photo.hasOwnProperty("photo_url"), // Check for photo_url key
+        true
+      );
 
-      if(photos.length > 4) {
-        return Promise.reject('Maximum 4 photos per project.');
-      };
-
-      // Check that all items in the array are objects with display_order key and aws obj value
-      for(const photo of photos) {
-        
-        if(typeof photo !== 'object') {
-          return Promise.reject('Each item in the photo array must be an object.');
-        };
-
-        // Validate display_order key exists and is a positive number
-        if(!('display_order' in photo) || typeof photo.display_order !== 'number' || photo.display_order <= 0) {
-          return Promise.reject('Each photo must have a display_order with a positive number.');
-        };
-
-        if(!('photo_url' in photo) || !isValidAWSObj(photo.photo_url)) {
-          return Promise.reject('Each photo must have a photo_url that is a valid AWS object name ending in .jpeg.');
-        };
-
+      if(!allPhotosHaveRequiredProperties) {
+        return Promise.reject('Each project photo must have a display order and a photo url property.');
       };
       
+      const allURLsAreValidAWSObjs = photos.reduce((acc, curr) => isValidAWSObj(curr.photo_url.trim()), true);
+      
+      if(!allURLsAreValidAWSObjs) {
+        return Promise.reject('All project photo urls must be valid aws object names ending in ".jpeg".');
+      };
+
+      const allDisplayOrdersAreValid = photos.reduce(
+        (acc, curr) =>
+          acc &&
+          Number.isInteger(Number(curr.display_order)) && 
+          Number(curr.display_order) > 0,
+        true
+      );
+      
+      if(!allDisplayOrdersAreValid) {
+        return Promise.reject('All project photo display orders must be integers greater than 0.');
+      };
+
+      const displayOrderMap = {};
+
+      photos.forEach(photo => displayOrderMap[photo.display_order] = (displayOrderMap[photo.display_order] || 0) + 1);
+
+      const hasNoDuplicateDisplayOrders = Object.values(displayOrderMap).every(count => count <= 1);
+
+      if(!hasNoDuplicateDisplayOrders) {
+        return Promise.reject('All project photo display orders must be integers greater than 0.');
+      };
+
+      return true;
     })
 ];
 
