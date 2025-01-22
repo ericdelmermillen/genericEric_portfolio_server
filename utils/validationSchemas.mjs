@@ -12,7 +12,6 @@ const paramsIsNumber = [
     .withMessage('ID must be a number')
 ];
 
-
 const emailAndPasswordAreValid = [
   body('email')
     .isEmail()
@@ -24,7 +23,6 @@ const emailAndPasswordAreValid = [
     .isLength({ min: 8, max: 32})
     .withMessage('Password must be between 8-32 characters long')
 ];
-
 
 const refreshTokenSchema = [
   header('x-refresh-token')
@@ -46,7 +44,6 @@ const refreshTokenSchema = [
       return true;
     })
 ];
-
 
 const validateAuth = [
   body()
@@ -111,7 +108,6 @@ const validContactFormData = [
 const validProjectData = [
   body('project_date')
     .custom((project_date) => {
-
       if(!project_date) {
         return Promise.reject('Project date missing.');
       };
@@ -124,55 +120,21 @@ const validProjectData = [
     }),
 
   body('project_title')
-    .notEmpty()
-    .withMessage('Project title is required.')
-    .isString()
-    .withMessage('Project title must be a string.')
-    .isLength({ min: 5, max: 50 })
-    .withMessage('Project title must be between 5-50 characters long.'),
+    .notEmpty().withMessage('Project title is required.')
+    .isString().withMessage('Project title must be a string.')
+    .isLength({ min: 5, max: 50 }).withMessage('Project title must be between 5-50 characters long.'),
   
   body('project_description')
-    .notEmpty()
-    .withMessage('Project description is required.')
-    .isString()
-    .withMessage('Project description must be a string.')
-    .isLength({ min: 25, max: 2000 })
-    .withMessage('Project description must be between 25-2000 characters long.'),
+    .notEmpty().withMessage('Project description is required.')
+    .isString().withMessage('Project description must be a string.')
+    .isLength({ min: 25, max: 4000 }).withMessage('Project description must be between 25-4000 characters long.'),
     
   body('project_urls')
     .custom(async (urls) => {
-      
-      const allURLSAreObjs = urls.every(url => typeof url === "object");
-
-      if(!Array.isArray(urls) || urls.length < 1 || urls.length > 4 || !allURLSAreObjs) {
-        return Promise.reject('Project URLs must be an array containing 1-4 url objects.');
+      if(!Array.isArray(urls) || urls.length < 1 || urls.length > 4) {
+        return Promise.reject('Project URLs must be an array containing 1-4 URL objects.');
       };
 
-      const objKeys = [];
-      const objValues = [];
-
-      for(const urlObj of urls) {
-        
-        if(typeof urlObj !== 'object') {
-          return Promise.reject('Each item in the Url array must be an object.');
-        };
-
-        if(typeof urlObj === "object") {
-          objKeys.push(Object.entries(urlObj)[0][0])
-          objValues.push(Object.entries(urlObj)[0][1])
-        };
-      };
-
-      // must have a Deployed Url key
-      if(objKeys.length === 1 && !objKeys.includes("Deployed Url")) {
-        return Promise.reject('Project must include a Deployed URL.');
-      };
-
-      const keyCountMap = objKeys.reduce((acc, key) => {
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
-      
       const validKeys = [
         "Deployed Url",
         "Youtube Video",
@@ -180,90 +142,89 @@ const validProjectData = [
         "Github (Server)"
       ];
 
-      const allKeysValid = Object.keys(keyCountMap).every(key => validKeys.includes(key));
+      const objKeys = urls.map(urlObj => {
+        if(typeof urlObj !== 'object') {
+          return Promise.reject('Each item in the URL array must be an object.');
+        };
+        return Object.keys(urlObj)[0]; // Get the first key
+      });
 
+      // Must have a 'Deployed Url' key
+      if(!objKeys.includes("Deployed Url")) {
+        return Promise.reject('Project must include a Deployed URL.');
+      };
+
+      const keyCountMap = objKeys.reduce((acc, key) => {
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      const allKeysValid = Object.keys(keyCountMap).every(key => validKeys.includes(key));
       if(!allKeysValid) {
         return Promise.reject('Invalid keys in project URLs.');
       };
 
-      const duplicateKeyCount = Object.values(keyCountMap).some(count => count > 1);
-
-      if(duplicateKeyCount) {
+      if(Object.values(keyCountMap).some(count => count > 1)) {
         return Promise.reject('Some keys in the project URLs are duplicates.');
       };
 
-      const allValuesAreStrings = objValues.reduce((acc, curr) => acc && typeof curr === "string", true);
+      const allValuesAreStrings = urls.every(urlObj => {
+        const urlValue = Object.values(urlObj)[0];
+        return typeof urlValue === "string" && isValidURL(urlValue);
+      });
 
       if(!allValuesAreStrings) {
-        return Promise.reject('All project Urls must be strings.');
+        return Promise.reject('All project URLs must be valid strings.');
       };
 
-      const allURLsAreValid = objValues.reduce((acc, url) => {
-        return acc && isValidURL(url);
-      }, true);
-
-      if(!allURLsAreValid) {
-        return Promise.reject('One or more project urls are invalid');
-      };
-      
       return true;
     }),
-  
-      
-    // tests for project_photos
+
   body('project_photos')
     .custom(async (photos) => {
-
-      const allPhotosAreObjs = photos.every(photo => typeof photo === "object");
-
-      if(!Array.isArray(photos) || !allPhotosAreObjs || photos.length < 1 || photos.length > 4) {
+      if(!Array.isArray(photos) || photos.length < 1 || photos.length > 4) {
         return Promise.reject('Project photos must be an array of 1-4 objects.');
       };
 
-      const allPhotosHaveRequiredProperties = photos.reduce(
-        (acc, photo) =>
-          acc &&
-          Object.keys(photo).length === 2 && // Ensure exactly 2 properties
-          photo.hasOwnProperty("display_order") && // Check for display_order key
-          photo.hasOwnProperty("photo_url"), // Check for photo_url key
-        true
-      );
+      const allPhotosValid = photos.every(photo => {
+        if(typeof photo !== "object" || Object.keys(photo).length !== 2) {
+          return false;
+        };
+        return photo.hasOwnProperty("display_order") && photo.hasOwnProperty("photo_url");
+      });
 
-      if(!allPhotosHaveRequiredProperties) {
-        return Promise.reject('Each project photo must have a display order and a photo url property.');
-      };
-      
-      const allURLsAreValidAWSObjs = photos.reduce((acc, curr) => isValidAWSObj(curr.photo_url.trim()), true);
-      
-      if(!allURLsAreValidAWSObjs) {
-        return Promise.reject('All project photo urls must be valid aws object names ending in ".jpeg".');
+      if(!allPhotosValid) {
+        return Promise.reject('Each project photo must have a display order and a photo URL property.');
       };
 
-      const allDisplayOrdersAreValid = photos.reduce(
-        (acc, curr) =>
-          acc &&
-          Number.isInteger(Number(curr.display_order)) && 
-          Number(curr.display_order) > 0,
-        true
-      );
+      const allURLsAreValid = photos.every(photo => isValidAWSObj(photo.photo_url.trim()));
+        if(!allURLsAreValid) {
+        return Promise.reject('All project photo URLs must be valid AWS object names ending in ".jpeg".');
+      };
       
-      if(!allDisplayOrdersAreValid) {
+      const allDisplayOrdersValid = photos.every(photo => {
+        const displayOrder = Number(photo.display_order);
+        return Number.isInteger(displayOrder) && displayOrder > 0;
+      });
+
+      if(!allDisplayOrdersValid) {
         return Promise.reject('All project photo display orders must be integers greater than 0.');
       };
 
-      const displayOrderMap = {};
-
-      photos.forEach(photo => displayOrderMap[photo.display_order] = (displayOrderMap[photo.display_order] || 0) + 1);
+      const displayOrderMap = photos.reduce((acc, photo) => {
+        acc[photo.display_order] = (acc[photo.display_order] || 0) + 1;
+        return acc;
+      }, {});
 
       const hasNoDuplicateDisplayOrders = Object.values(displayOrderMap).every(count => count <= 1);
-
-      if(!hasNoDuplicateDisplayOrders) {
-        return Promise.reject('All project photo display orders must be integers greater than 0.');
-      };
+        if(!hasNoDuplicateDisplayOrders) {
+          return Promise.reject('All project photo display orders must be unique.');
+        };
 
       return true;
     })
 ];
+
 
 
 const validProjectOrderData = [

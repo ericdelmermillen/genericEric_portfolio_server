@@ -20,19 +20,7 @@ CREATE TABLE projects (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- CREATE TRIGGER set_display_order BEFORE
--- INSERT
---   ON projects FOR EACH ROW
--- SET
---   NEW.display_order = (
---     SELECT
---       IFNULL(MAX(display_order), 0) + 1
---     FROM
---       projects
---   );
 
---project 1: mad gabs
--- title: Mad Gabs  
 insert into
   projects (
     project_date,

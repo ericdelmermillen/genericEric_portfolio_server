@@ -18,7 +18,6 @@ import {
 
 const projectsRouter = express.Router();
 
-
 // get project summaries for portfolio section of home page: 
 // GET /api/projects/portfoliosummary
 projectsRouter.route('/portfoliosummary')
@@ -44,7 +43,7 @@ projectsRouter.route('/project/:id')
 // POST /api/projects/add
 projectsRouter.route('/project/add')
 .post(
-  // validateRequest(validateAuth), 
+  validateRequest(validateAuth), 
   validateRequest(validProjectData), 
   createProject);
 

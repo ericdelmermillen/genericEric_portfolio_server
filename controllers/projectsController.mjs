@@ -6,9 +6,7 @@ import {
   getFreshTokens
 } from '../utils/utils.mjs';
 
-
 const AWS_BUCKET_PATH = process.env.AWS_BUCKET_PATH;
-
 
 // get portfolio summary
 // GET /api/projects/portfoliosummary
@@ -251,6 +249,7 @@ const getProjectDetails = async (req, res) => {
     return res.json(projectDetails);
   } catch (error) {
     console.error("Error fetching project details:", error);
+    return res.status(500).json({ error: `An error occurred while fetching project ${projectId}` });
   };
 };
 
@@ -258,7 +257,6 @@ const getProjectDetails = async (req, res) => {
 // post project
 // POST /api/projects/add
 const createProject = async (req, res) => {
-  // return res.json({message: "Yipee cayay motherfucker"});
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
   const refreshToken = req.headers['x-refresh-token'];
@@ -272,8 +270,6 @@ const createProject = async (req, res) => {
     project_urls, 
     project_photos 
   } = req.body;
-
-  // return res.json({ message: 'Alaye kilowa mother fucker' });
 
   const connection = await pool.getConnection(); 
 
@@ -373,7 +369,7 @@ const createProject = async (req, res) => {
       };
     };
 
-    return res.status(500).json({ message: "Error creating project", error });
+    return res.status(500).json({ message: "Error creating project"});
   } finally {
     connection.release();
   };
@@ -493,7 +489,7 @@ const editProject = async (req, res) => {
   } catch (error) {
     console.error("Error editing project:", error);
     await connection.rollback();
-    return res.status(500).json({ message: "Error editing project", error });
+    return res.status(500).json({ message: "Error editing project" });
   } finally {
     connection.release();
   };

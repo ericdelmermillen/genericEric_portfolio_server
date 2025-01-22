@@ -122,14 +122,10 @@ const getFormattedDate = (date) => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
-
 const isValidAWSObj = (name) => {
   const awsObjPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpeg$/;
-
   return awsObjPattern.test(name);
 };
-
-
 
 export {
   isValidURL,
