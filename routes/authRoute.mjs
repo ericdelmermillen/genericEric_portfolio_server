@@ -12,6 +12,7 @@ import{
   refreshTokenSchema
  } from '../utils/validationSchemas.mjs';
 import { validateRequest } from "../middleware/middleware.mjs";
+
 const authRouter = express.Router();
 
 

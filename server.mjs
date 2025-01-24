@@ -3,9 +3,11 @@ dotenv.config();
 
 import express from 'express';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 
-// need to research each config option and set up later
+const app = express();
+
 // app.use(helmet({
 //   contentSecurityPolicy: {
 //     directives: {
@@ -29,7 +31,23 @@ import cors from 'cors';
 //   xssFilter: true, // Enable XSS filter in browsers
 // }));
 
-const app = express();
+
+
+// *** AWS Elastic Load Balancer (ELB), ensure The ELB is configured to forward the X-Forwarded-For header && Your EC2 instance’s security group allows traffic from the ELB.
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Use the X-Forwarded-For header if behind a proxy
+    return req.headers['x-forwarded-for'] || req.ip;
+  },
+});
+
+app.use(limiter);
+
 const TESTING = process.env.TESTING || false;
 
 const corsOptions = TESTING 
@@ -55,11 +73,11 @@ import projectsRouter from './routes/projectsRoute.mjs';
 
 // authRouter for createUser, login, logout, AWS signed url
 app.use('/api/auth', authRouter);
-// contactRouter for handling contact form and forwarding via nodeMailer
 
+// contactRouter for handling contact form and forwarding via nodeMailer
 app.use('/api/contact', contactRouter);
 
-
+// projectsRouter for all project related requests
 app.use('/api/projects', projectsRouter);
 
 const PORT = process.env.PORT || 8080;
