@@ -8,29 +8,33 @@ import cors from 'cors';
 
 const app = express();
 
-// app.use(helmet({
-//   contentSecurityPolicy: {
-//     directives: {
-//       defaultSrc: ["'self'"],
-//       scriptSrc: ["'self'", "'unsafe-inline'", "https://example.com"], // Allow scripts from self and example.com
-//       styleSrc: ["'self'", "'unsafe-inline'", "https://example.com"], // Allow styles from self and example.com
-//       imgSrc: ["'self'", "data:", "https://example.com"], // Allow images from self, data URIs, and example.com
-//       connectSrc: ["'self'", "https://api.example.com"], // Allow connections to self and api.example.com
-//       fontSrc: ["'self'", "https://example.com"], // Allow fonts from self and example.com
-//       objectSrc: ["'none'"], // Disallow plugins like Flash
-//       frameAncestors: ["'none'"], // Disallow embedding the site in iframes
-//       formAction: ["'self'"], // Allow form actions only from self
-//       upgradeInsecureRequests: [], // Automatically upgrade HTTP requests to HTTPS
-//     },
-//   },
-//   referrerPolicy: { policy: 'no-referrer-when-downgrade' },
-//   frameguard: { action: 'sameorigin' }, // Only allow framing on the same origin
-//   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Enforce HTTPS for one year
-//   hidePoweredBy: true, // Hide X-Powered-By header
-//   noSniff: true, // Prevent MIME type sniffing
-//   xssFilter: true, // Enable XSS filter in browsers
-// }));
+const AWS_BUCKET_BASE_PATH = process.env.AWS_BUCKET_BASE_PATH; 
+const environment = process.env.NODE_ENV || "development";
+const isProduction = environment === "production"
 
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", AWS_BUCKET_BASE_PATH],
+        imgSrc: ["'self'", "data:", AWS_BUCKET_BASE_PATH],
+        connectSrc: ["'self'", AWS_BUCKET_BASE_PATH], // Define this once
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        formAction: ["'self'"],
+        ...(isProduction && { upgradeInsecureRequests: [] }), // Enable in production
+      },
+    },
+    // Uncomment and customize other Helmet options as needed
+    // referrerPolicy: { policy: 'no-referrer-when-downgrade' },
+    // frameguard: { action: 'sameorigin' },
+    // hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    // hidePoweredBy: true,
+    // noSniff: true,
+    // xssFilter: true,
+  })
+);
 
 
 // *** AWS Elastic Load Balancer (ELB), ensure The ELB is configured to forward the X-Forwarded-For header && Your EC2 instance’s security group allows traffic from the ELB.
@@ -83,5 +87,5 @@ app.use('/api/projects', projectsRouter);
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT} 🚀`);
+  console.log(`Server is running on port ${PORT} 🚀 in ${environment} environment`);
 });
