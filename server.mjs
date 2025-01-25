@@ -17,22 +17,26 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", AWS_BUCKET_BASE_PATH],
+        scriptSrc: ["'self'", AWS_BUCKET_BASE_PATH],
         imgSrc: ["'self'", "data:", AWS_BUCKET_BASE_PATH],
-        connectSrc: ["'self'", AWS_BUCKET_BASE_PATH], // Define this once
+        connectSrc: ["'self'", AWS_BUCKET_BASE_PATH],
+        fontSrc: ["'self'", "data:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
         formAction: ["'self'"],
-        ...(isProduction && { upgradeInsecureRequests: [] }), // Enable in production
+        ...(isProduction && { upgradeInsecureRequests: [] }),
       },
     },
-    // Uncomment and customize other Helmet options as needed
-    // referrerPolicy: { policy: 'no-referrer-when-downgrade' },
-    // frameguard: { action: 'sameorigin' },
-    // hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    // hidePoweredBy: true,
-    // noSniff: true,
-    // xssFilter: true,
+    crossOriginEmbedderPolicy: { policy: "require-corp" },
+    crossOriginOpenerPolicy: { policy: "same-origin" },
+    crossOriginResourcePolicy: { policy: "same-site" }, 
+    referrerPolicy: { policy: "same-origin" },
+    frameguard: { action: 'deny' },  
+    hidePoweredBy: true,
+    xssFilter: true,
+    permittedCrossDomainPolicies: { permittedPolicies: "none" },
+    dnsPrefetchControl: { allow: false }
   })
 );
 
@@ -74,7 +78,6 @@ import projectsRouter from './routes/projectsRoute.mjs';
 
 
 // Routers
-
 // authRouter for createUser, login, logout, AWS signed url
 app.use('/api/auth', authRouter);
 
