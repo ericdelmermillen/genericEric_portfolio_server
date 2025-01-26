@@ -9,8 +9,9 @@ import cors from 'cors';
 const app = express();
 
 const AWS_BUCKET_BASE_PATH = process.env.AWS_BUCKET_BASE_PATH; 
+const CLIENT_HOST = process.env.CLIENT_HOST
 const environment = process.env.NODE_ENV || "development";
-const isProduction = environment === "production"
+const isProduction = environment === "production";
 
 app.use(
   helmet({
@@ -42,6 +43,7 @@ app.use(
 
 
 // *** AWS Elastic Load Balancer (ELB), ensure The ELB is configured to forward the X-Forwarded-For header && Your EC2 instance’s security group allows traffic from the ELB.
+// configure ELB to forward the x-forwarded-for header so the ELB's ID paddress isn't used instead of the client's IP
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -56,11 +58,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-const TESTING = process.env.TESTING || false;
-
-const corsOptions = TESTING 
-  ? { }
-  : { origin: process.env.CLIENT_HOST };
+const corsOptions = { origin: CLIENT_HOST };
   
 app.use(cors(corsOptions));
 
@@ -71,9 +69,7 @@ app.use(helmet());
 
 // routes
 import authRouter from './routes/authRoute.mjs';
-
 import contactRouter from './routes/contactRoute.mjs';
-
 import projectsRouter from './routes/projectsRoute.mjs';
 
 
