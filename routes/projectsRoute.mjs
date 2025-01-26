@@ -11,7 +11,8 @@ import {
 import { validateRequest } from "../middleware/middleware.mjs";
 import { 
   paramsIsNumber, 
-  validateAuth,
+  // validateAuth,
+  validateAuthData,
   validProjectData,
   validProjectOrderData
 } from "../utils/validationSchemas.mjs";
@@ -35,7 +36,7 @@ projectsRouter.route('/all')
 projectsRouter.route('/project/:id')
   .get(
     validateRequest(paramsIsNumber), 
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     getProjectDetails);
 
 
@@ -43,7 +44,7 @@ projectsRouter.route('/project/:id')
 // POST /api/projects/add
 projectsRouter.route('/project/add')
 .post(
-  validateRequest(validateAuth), 
+  validateRequest(validateAuthData), 
   validateRequest(validProjectData), 
   createProject);
 
@@ -52,7 +53,7 @@ projectsRouter.route('/project/add')
 // PUT /api/projects/edit/:id
 projectsRouter.route('/project/edit/:id')
   .put(
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     validateRequest(validProjectData), 
     editProject);
 
@@ -60,7 +61,7 @@ projectsRouter.route('/project/edit/:id')
 // DELETE /api/projects/edit/:id
 projectsRouter.route('/project/delete/:id')
   .delete(
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     validateRequest(paramsIsNumber), 
     deleteProject);
 
@@ -69,7 +70,7 @@ projectsRouter.route('/project/delete/:id')
 // PATCH /api/projects/updateorder
 projectsRouter.route('/updateorder')
   .patch(
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     validateRequest(validProjectOrderData), 
     updateProjectOrder);
 

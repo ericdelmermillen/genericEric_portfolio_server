@@ -24,7 +24,7 @@ const emailAndPasswordAreValid = [
     .withMessage('Password must be between 8-32 characters long')
 ];
 
-const refreshTokenSchema = [
+const refreshTokenData = [
   header('x-refresh-token')
     .notEmpty()
     .withMessage('Refresh token is required')
@@ -45,7 +45,7 @@ const refreshTokenSchema = [
     })
 ];
 
-const validateAuth = [
+const validateAuthData = [
   body()
     .custom(async (_, { req }) => {
       const token = req.headers['authorization']?.split(" ")[1];
@@ -274,8 +274,8 @@ const validProjectOrderData = [
 export {
   paramsIsNumber,
   emailAndPasswordAreValid, 
-  validateAuth,
-  refreshTokenSchema,
+  validateAuthData,
+  refreshTokenData,
   validContactFormData,
   validProjectData,
   validProjectOrderData

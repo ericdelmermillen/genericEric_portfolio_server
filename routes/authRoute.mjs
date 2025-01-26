@@ -8,8 +8,8 @@ import {
 } from "../controllers/authController.mjs";
 import{ 
   emailAndPasswordAreValid, 
-  validateAuth,
-  refreshTokenSchema
+  validateAuthData,
+  refreshTokenData
  } from '../utils/validationSchemas.mjs';
 import { validateRequest } from "../middleware/middleware.mjs";
 
@@ -33,7 +33,7 @@ authRouter.route("/loginuser")
 // POST /api/auth/refreshtoken
 authRouter.route("/refreshtoken")
   .post(
-    validateRequest(refreshTokenSchema), 
+    validateRequest(refreshTokenData), 
     refreshToken);
 
 
@@ -41,14 +41,14 @@ authRouter.route("/refreshtoken")
 // POST /api/auth/getsignedurl
 authRouter.route("/getsignedurl")
   .post(
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     getSignedurl);
   
   
 // POST /api/auth/logoutuser
 authRouter.route("/logoutuser")
   .post(
-    validateRequest(validateAuth), 
+    validateRequest(validateAuthData), 
     logoutUser);
 
 
