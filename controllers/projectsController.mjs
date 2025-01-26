@@ -1,5 +1,5 @@
 import pool from '../dbClient.mjs';
-import { deleteFiles } from '../s3.js';
+import { deleteFiles } from '../s3.mjs';
 import { 
   decodeJWT,
   getFormattedDate,

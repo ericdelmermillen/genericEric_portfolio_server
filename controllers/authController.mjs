@@ -6,7 +6,7 @@ import {
 } from "../utils/utils.mjs";
 import { 
   generateUploadURL
- } from "../s3.js";
+ } from "../s3.mjs";
 import pool from '../dbClient.mjs';
 import dotenv from "dotenv";
 

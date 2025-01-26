@@ -15,11 +15,9 @@ const AWS_DIRNAME = process.env.AWS_DIRNAME;
 const AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY;
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
 
-
-if(!AWS_REGION || !AWS_BUCKET_NAME || !AWS_ACCESS_KEY || !AWS_SECRET_ACCESS_KEY) {
+if(!AWS_REGION || !AWS_BUCKET_NAME || !AWS_DIRNAME || !AWS_ACCESS_KEY || !AWS_SECRET_ACCESS_KEY) {
   throw new Error("Missing required AWS environment variables.");
 };
-
 
 // Initialize S3 client with SDK v3
 const s3Client = new S3Client({
