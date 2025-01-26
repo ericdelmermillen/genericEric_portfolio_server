@@ -8,8 +8,8 @@
     "dev": "node --watch ./server.mjs",
     "migrate:up": "node migrations/migrate.js up",
     "migrate:down": "node migrations/migrate.js down",
-    "seed:up": "node seeds/seed.js up",
-    "seed:down": "node seeds/seed.js down"
+    "seed:up": "node seeds/seed.mjs up",
+    "seed:down": "node seeds/seed.mjs down"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.735.0",
