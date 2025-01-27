@@ -10,7 +10,7 @@ const sendContactForm = async (req, res) => {
   const { 
     name, 
     email, 
-    message 
+    message
   } = req.body;
 
   const config = {

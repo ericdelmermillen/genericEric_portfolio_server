@@ -1,12 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { 
-  decodeJWT,
-  getFreshTokens
-} from "../utils/utils.mjs";
-import { 
-  generateUploadURL
- } from "../s3.mjs";
+import { generateUploadURL } from "../s3.mjs";
+import { decodeJWT,getFreshTokens } from "../utils/utils.mjs";
 import pool from '../dbClient.mjs';
 import dotenv from "dotenv";
 
@@ -34,12 +29,11 @@ const createUser = async (req, res) => {
     );
 
     return res.status(201).json({
-      message: "User created successfully",
-      userID: result.insertId
+      message: "User created successfully"
     });
   } catch (error) {
     console.error('Error creating user:', error);
-    return res.status(500).json({ message: "Database error creating user" });
+    return res.status(500).json({ message: "An error occurred while creating the user" });
   };
 };
 
@@ -89,7 +83,6 @@ const refreshToken = (req, res) => {
 
     // Check if refresh token has expired
     if(exp < currentTimestamp) {
-      console.log('Refresh token expired');
       return res.status(401).json({ error: 'Refresh token expired' });
     };
 
@@ -98,9 +91,8 @@ const refreshToken = (req, res) => {
 
     return res.json({
       message: 'Token refreshed successfully',
-      userID,
       newToken,
-      newRefreshToken,
+      newRefreshToken
     });
   } catch (error) {
     console.log('Error refreshing token:', error);
