@@ -5,7 +5,7 @@ const validateToken = (req, res, next) => {
   const token = req.headers.authorization;
 
   if(!token || !verifyToken(token)) {
-    console.log("rejected from middleware")
+    console.log("rejected from middleware");
     return res.status(401).send({ message: "unauthorized" });
   };
 
@@ -20,7 +20,6 @@ const validateRequest = (validations) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()) {
       const errorMsgs = errors.array().map(error => error.msg);
-      console.log(errorMsgs);
       return res.status(400).json({ errors: errorMsgs });
     };
     
