@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node ./server.mjs",
     "dev": "node --watch ./server.mjs",
-    "migrate:up": "node migrations/migrate.js up",
-    "migrate:down": "node migrations/migrate.js down",
+    "migrate:up": "node migrations/migrate.mjs up",
+    "migrate:down": "node migrations/migrate.mjs down",
     "seed:up": "node seeds/seed.mjs up",
     "seed:down": "node seeds/seed.mjs down"
   },
