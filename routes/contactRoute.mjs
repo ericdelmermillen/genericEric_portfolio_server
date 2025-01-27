@@ -7,6 +7,6 @@ import{ validContactFormData } from '../utils/validationSchemas.mjs';
 const contactRouter = express.Router();
 
 contactRouter.route("/")
-.post(validateRequest(validContactFormData), sendContactForm);
+  .post(validateRequest(validContactFormData), sendContactForm);
 
 export default contactRouter;
