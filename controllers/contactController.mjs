@@ -21,7 +21,7 @@ const sendContactForm = async (req, res) => {
       user: EMAIL,
       pass: PASSWORD
     }
-  }
+  };
   
   const transporter = nodemailer.createTransport(config)
 
@@ -39,7 +39,7 @@ const emailMessage = {
   to: EMAIL,
   subject: `${subject}`,
   text: "New Contact form submission",
-  html: submittedMessage,
+  html: submittedMessage
 };
 
 
@@ -49,7 +49,6 @@ const emailMessage = {
       message: "Thanks! Your message to Eric has been sent!"})
       
     return await transporter.sendMail(emailMessage);
-
   } catch(error) {
     console.error('Error sending email:', error);
     return res.status(500).json({ error: "Failed to send email." });
