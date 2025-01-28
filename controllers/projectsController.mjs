@@ -28,6 +28,7 @@ const getPortfolioSummary = async (req, res) => {
     `;
 
     const queryParams = [];
+
     if(limit !== null) {
       query += ` LIMIT ?`;
       queryParams.push(limit);
@@ -44,13 +45,13 @@ const getPortfolioSummary = async (req, res) => {
       project_id: row.id,
       project_title: row.projectTitle,
       display_order: row.display_order,
-      img_src: row.imgSrc || null
+      img_src: row.imgSrc
     }));
 
     return res.json(projectSummaries);
   } catch (error) {
     console.error("Error fetching portfolio summary:", error);
-    return res.status(500).json({ message: "Failed to fetch portfolio summary" });
+    return res.status(500).json({ message: `Failed to fetch portfolio summary, error: ${error.message}` });
   };
 };
 
