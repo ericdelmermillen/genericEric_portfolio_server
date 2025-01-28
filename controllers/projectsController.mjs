@@ -157,7 +157,6 @@ const getProjects = async (req, res) => {
   };
 };
 
-
 // getProjectDetails returns all data for the project: for edit project
 // GET /api/projects/project/:id
 const getProjectDetails = async (req, res) => {
@@ -186,7 +185,7 @@ const getProjectDetails = async (req, res) => {
 
     if(projectRows.length === 0) {
       return res.status(404).json({ message: "Project not found" });
-    }
+    };
 
     const project = projectRows[0];
 
@@ -240,6 +239,8 @@ const getProjectDetails = async (req, res) => {
   } catch (error) {
     console.error("Error fetching project details:", error);
     return res.status(500).json({ error: `An error occurred while fetching project ${projectId}` });
+  } finally {
+    connection.release();
   };
 };
 
