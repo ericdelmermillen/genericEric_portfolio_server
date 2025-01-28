@@ -244,7 +244,6 @@ const getProjectDetails = async (req, res) => {
   };
 };
 
-
 // post project
 // POST /api/projects/add
 const createProject = async (req, res) => {
@@ -521,9 +520,13 @@ const deleteProject = async (req, res) => {
 
     const photoUrls = photoRows.map((row) => row.photo_url);
 
-    // Pass the photo URLs to deleteFiles if any exist
-    if(photoUrls.length > 0) {
-      await deleteFiles(photoUrls); // Ensure this function is imported and accessible
+    if (photoUrls.length > 0) {
+      try {
+        await deleteFiles(photoUrls); // Ensure this function is imported and accessible
+      } catch (deleteError) {
+        console.error("Error deleting files:", deleteError);
+        throw new Error("Failed to delete project files");
+      };
     };
 
     // Delete the project
@@ -540,15 +543,16 @@ const deleteProject = async (req, res) => {
       newRefreshToken: newRefreshToken,
     });
 
-  } catch (error) {
+  } catch(error) {
     if(connection) {
-      await connection.rollback(); // Rollback on error
+      await connection.rollback();
     };
+    
     console.error("Error deleting project:", error);
     return res.status(500).json({ error: 'Failed to delete project' });
   } finally {
     if(connection) {
-      connection.release(); // Ensure the connection is released back to the pool
+      connection.release();
     };
   };
 };
