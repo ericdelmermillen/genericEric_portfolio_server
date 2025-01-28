@@ -55,7 +55,6 @@ const getPortfolioSummary = async (req, res) => {
   };
 };
 
-
 // get all projects: returns entire project for projects page
 // GET /api/projects/all
 const getProjects = async (req, res) => {
@@ -82,16 +81,6 @@ const getProjects = async (req, res) => {
     `;
 
     const queryParams = [];
-    
-    if(limit !== null) {
-      query += ` LIMIT ?`;
-      queryParams.push(limit);
-    };
-
-    if(offset !== null) {
-      query += ` OFFSET ?`;
-      queryParams.push(offset);
-    };
 
     const [ projects ] = await pool.query(query, queryParams);
 
