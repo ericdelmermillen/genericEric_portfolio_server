@@ -547,7 +547,7 @@ const deleteProject = async (req, res) => {
     if(connection) {
       await connection.rollback();
     };
-    
+
     console.error("Error deleting project:", error);
     return res.status(500).json({ error: 'Failed to delete project' });
   } finally {
@@ -556,7 +556,6 @@ const deleteProject = async (req, res) => {
     };
   };
 };
-
 
 // add validations for project_id and display_order to be number
 // PATCH /api/projects/updateorder
@@ -568,8 +567,6 @@ const updateProjectOrder = async (req, res) => {
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
-  // return res.json({ message: 'Alaye kilowa mother fucker' });
-
   const connection = await pool.getConnection();
 
   try {
@@ -578,7 +575,7 @@ const updateProjectOrder = async (req, res) => {
     for(const { project_id, display_order } of new_project_order) {
       if(typeof project_id === 'undefined' || typeof display_order === 'undefined') {
         throw new Error(`Missing project_id or display_order for project ${project_id}`);
-      }
+      };
 
       await connection.execute(
         'UPDATE projects SET display_order = ? WHERE project_id = ?',
