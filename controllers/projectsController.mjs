@@ -167,8 +167,10 @@ const getProjectDetails = async (req, res) => {
 
   const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
 
+  let connection;
+
   try {
-    const connection = await pool.getConnection();
+    connection = await pool.getConnection();
 
     // Query project details
     const [ projectRows ] = await connection.query(
