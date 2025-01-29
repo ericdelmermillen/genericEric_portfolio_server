@@ -78,9 +78,10 @@ const getProjects = async (req, res) => {
           project_description
       FROM projects
       ORDER BY display_order
+      LIMIT ? OFFSET ?
     `;
 
-    const queryParams = [];
+    const queryParams = [limit, offset];
 
     const [ projects ] = await pool.query(query, queryParams);
 
@@ -146,6 +147,8 @@ const getProjects = async (req, res) => {
       project.project_photos = projectPhotos[project.project_id] || [];
       project.project_urls = projectUrls[project.project_id] || [];
     });
+
+    console.log(projects.length)
   
     return res.json({
       projects,
