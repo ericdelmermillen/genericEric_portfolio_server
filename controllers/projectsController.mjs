@@ -147,8 +147,6 @@ const getProjects = async (req, res) => {
       project.project_photos = projectPhotos[project.project_id] || [];
       project.project_urls = projectUrls[project.project_id] || [];
     });
-
-    console.log(projects.length)
   
     return res.json({
       projects,
