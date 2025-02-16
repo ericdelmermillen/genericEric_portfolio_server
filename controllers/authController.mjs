@@ -1,31 +1,141 @@
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { generateUploadURL } from "../s3.mjs";
+import { decodeJWT,getFreshTokens } from "../utils/utils.mjs";
+import pool from '../dbClient.mjs';
+import dotenv from "dotenv";
 
-// needs to be async to query db
-// const createUser = async () => {
-const createUser = (req, res) => {
-  const { email, password } = req.body;
+dotenv.config();
 
-  res.json(`user created: email: ${email}, password: ${password}`);
+
+// POST /api/auth/createuser
+const createUser = async (req, res) => {
+  const { email, password } = req.body;  
+  
+  try {
+    const [ existingUser ] = await pool.query(
+    `SELECT id FROM users WHERE email = ?`, 
+    [email]);
+
+    if(existingUser.length > 0) {
+      return res.status(409).json({ message: "Email already in use" });
+    };
+    
+    const hashedPassword = await bcrypt.hash(password, 10); 
+
+    const [ result ] = await pool.query(
+      `INSERT INTO users (email, password) VALUES (?, ?)`,
+      [email, hashedPassword]
+    );
+
+    return res.status(201).json({
+      message: "User created successfully"
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return res.status(500).json({ message: "An error occurred while creating the user" });
+  };
 };
 
 
-// needs to be async to query db
-// const loginUser = async (req, res) => {
-const loginUser = (req, res) => {
+// POST /api/auth/loginuser
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
-  res.json(`user logged in: email: ${email}, password: ${password}`);
+  try {
+    const [ user ] = await pool.query(
+      `SELECT id, password FROM users WHERE email = ?`,
+      [email]
+    );
+
+    if(user.length === 0) {
+      return res.status(401).json({ message: "Email and/or password incorrect" });
+    };
+
+    const isPasswordValid = await bcrypt.compare(password, user[0].password);
+    if(!isPasswordValid) {
+      return res.status(401).json({ message: "Email and/or password incorrect" });
+    };
+
+    const userID = user[0].id;
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+    
+    return res.json({
+      message: "Login successful",
+      userID: userID,
+      token: newToken,
+      refreshToken: newRefreshToken
+    });
+  } catch (error) {
+    console.error(`Error logging in user: ${error}`);
+    return res.status(500).json({ message: "Database error logging in user" });
+  };
 };
 
 
-const logoutUser = async (req, res) => {
-  const { email, password } = req.body;
+// POST /api/auth/refreshtoken
+const refreshToken = (req, res) => {
+  const refreshToken = req.headers['x-refresh-token'];
 
-  res.json(`user logged out: email: ${email}, password: ${password}`);
-}
+  try {
+    const { userID, exp } = jwt.decode(refreshToken);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
 
+    // Check if refresh token has expired
+    if(exp < currentTimestamp) {
+      return res.status(401).json({ error: 'Refresh token expired' });
+    };
+
+    // Generate new tokens
+    const { newToken, newRefreshToken } = getFreshTokens(userID);
+
+    return res.json({
+      message: 'Token refreshed successfully',
+      newToken,
+      newRefreshToken
+    });
+  } catch (error) {
+    console.log('Error refreshing token:', error);
+    return res.status(401).json({ error: 'Invalid refresh token' });
+  };
+};
+
+
+// could just enforce dirname === project-images since client expects that dirname
+// POST/api/auth/getsignedurl
+const getSignedurl = async (req, res) => {
+  const { dirname } = req.query;
+  
+  if(!dirname) {
+    return res.status(400).json({ message: 'Dirname required' });
+  };
+
+  const url = await generateUploadURL(dirname);
+
+  return res.send({url});
+};
+
+
+// // POST /api/auth/logoutuser
+const logoutUser = (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  const refreshToken = req.headers['x-refresh-token'];  
+
+  const { userID } = decodeJWT(token) || decodeJWT(refreshToken);
+
+  if(!userID || isNaN(Number(userID))) {
+    return res.status(400).json({ message: "Error logging out: invalid token" });
+  };
+
+  // client configured to log out on error: no need to update database with logged out user but may want to log in future
+
+  return res.status(200).json({ message: "Successfully logged out" });
+};
 
 export {
   createUser,
   loginUser,
+  refreshToken,
+  getSignedurl,
   logoutUser
 };
