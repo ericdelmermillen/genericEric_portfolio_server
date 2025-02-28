@@ -105,7 +105,6 @@ const refreshToken = (req, res) => {
 // POST/api/auth/getsignedurl
 const getSignedurl = async (req, res) => {
   const { dirname } = req.query;
-  console.log('dirname:', dirname);
   
   if(!dirname) {
     return res.status(400).json({ message: 'Dirname required' });
